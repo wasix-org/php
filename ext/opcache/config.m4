@@ -26,8 +26,9 @@ PHP_ARG_WITH([capstone],
   [no])
 
 if test "$PHP_OPCACHE" != "no"; then
-  dnl Always build as shared extension.
-  ext_shared=yes
+
+  dnl Always build as shared extension
+  ext_shared=no
 
   AS_VAR_IF([PHP_HUGE_CODE_PAGES], [yes],
     [AC_DEFINE([HAVE_HUGE_CODE_PAGES], [1],
