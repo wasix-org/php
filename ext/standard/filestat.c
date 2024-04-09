@@ -890,7 +890,9 @@ PHPAPI void php_stat(zend_string *filename, int type, zval *return_value)
 			RETURN_STRING("link");
 		}
 		switch(stat_sb->st_mode & S_IFMT) {
+#ifndef __wasi__
 		case S_IFIFO: RETURN_STRING("fifo");
+#endif
 		case S_IFCHR: RETURN_STRING("char");
 		case S_IFDIR: RETURN_STRING("dir");
 		case S_IFBLK: RETURN_STRING("block");

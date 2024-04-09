@@ -26,4 +26,7 @@ int start_accel_module(void);
 
 void zend_accel_override_file_functions(void);
 
+extern zend_module_entry accel_module_entry;
+#define phpext_opcache_ptr &accel_module_entry
+
 #endif /* _ZEND_ACCELERATOR_MODULE_H */
