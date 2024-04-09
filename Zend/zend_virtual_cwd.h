@@ -59,6 +59,10 @@
 #include <direct.h>
 #endif
 
+#ifdef __wasi__
+#define chown(a,b,c) 0
+#endif
+
 #if defined(__osf__) || defined(_AIX)
 #include <errno.h>
 #endif
