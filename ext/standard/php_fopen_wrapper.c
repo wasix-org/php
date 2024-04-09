@@ -317,7 +317,7 @@ php_stream * php_stream_url_wrap_php(php_stream_wrapper *wrapper, const char *pa
 			return NULL;
 		}
 
-#ifdef HAVE_UNISTD_H
+#if defined(HAVE_UNISTD_H) && !defined(__wasi__)
 		dtablesize = getdtablesize();
 #else
 		dtablesize = INT_MAX;

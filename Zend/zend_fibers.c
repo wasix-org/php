@@ -246,7 +246,7 @@ static zend_fiber_stack *zend_fiber_stack_allocate(size_t size)
 
 	zend_mmap_set_name(pointer, alloc_size, "zend_fiber_stack");
 
-# if ZEND_FIBER_GUARD_PAGES
+# if ZEND_FIBER_GUARD_PAGES && !defined(__wasi__)
 	if (mprotect(pointer, ZEND_FIBER_GUARD_PAGES * page_size, PROT_NONE) < 0) {
 		zend_throw_exception_ex(NULL, 0, "Fiber stack protect failed: mprotect failed: %s (%d)", strerror(errno), errno);
 		munmap(pointer, alloc_size);
@@ -415,7 +415,7 @@ ZEND_API zend_result zend_fiber_init_context(zend_fiber_context *context, void *
 	makecontext(handle, (void (*)(void)) zend_fiber_trampoline, 0);
 
 	context->handle = handle;
-#else
+#elif !defined(__wasi__)
 	// Stack grows down, calculate the top of the stack. make_fcontext then shifts pointer to lower 16-byte boundary.
 	void *stack = (void *) ((uintptr_t) context->stack->pointer + context->stack->size);
 
@@ -428,6 +428,8 @@ ZEND_API zend_result zend_fiber_init_context(zend_fiber_context *context, void *
 
 	context->handle = make_fcontext(stack, context->stack->size, zend_fiber_trampoline);
 	ZEND_ASSERT(context->handle != NULL && "make_fcontext() never returns NULL");
+#else
+	return FAILURE;
 #endif
 
 	context->kind = kind;
@@ -502,16 +504,18 @@ ZEND_API void zend_fiber_switch_context(zend_fiber_transfer *transfer)
 
 	/* Copy transfer struct because it might live on the other fiber's stack that will eventually be destroyed. */
 	*transfer = *transfer_data;
-#else
+#elif !defined(__wasi__)
 	boost_context_data data = jump_fcontext(to->handle, transfer);
 
 	/* Copy transfer struct because it might live on the other fiber's stack that will eventually be destroyed. */
 	*transfer = *data.transfer;
+#else
+	return;
 #endif
 
 	to = transfer->context;
 
-#ifndef ZEND_FIBER_UCONTEXT
+#if !defined(ZEND_FIBER_UCONTEXT) && !defined(__wasi__)
 	/* Get the context that resumed us and update its handle to allow for symmetric coroutines. */
 	to->handle = data.handle;
 #endif

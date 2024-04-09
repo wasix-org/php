@@ -704,6 +704,7 @@ static zend_always_inline int zend_mm_bitset_is_free_range(zend_mm_bitset *bitse
 
 static zend_always_inline void zend_mm_hugepage(void* ptr, size_t size)
 {
+#ifndef __wasi__
 #if defined(MADV_HUGEPAGE)
 	(void)madvise(ptr, size, MADV_HUGEPAGE);
 #elif defined(HAVE_MEMCNTL)
@@ -711,6 +712,7 @@ static zend_always_inline void zend_mm_hugepage(void* ptr, size_t size)
 	(void)memcntl(ptr, size, MC_HAT_ADVISE, (char *)&m, 0, 0);
 #elif !defined(VM_FLAGS_SUPERPAGE_SIZE_2MB) && !defined(MAP_ALIGNED_SUPER)
 	zend_error_noreturn(E_WARNING, "huge_pages: thp unsupported on this platform");
+#endif
 #endif
 }
 
