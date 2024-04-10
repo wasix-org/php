@@ -2606,13 +2606,14 @@ static void accel_reset_pcre_cache(void)
 
 zend_result accel_activate(INIT_FUNC_ARGS)
 {
-	printf("23\n");
+	printf("73 %d %d\n", (int)ZCG(enabled), (int)accel_startup_ok);
 	if (!ZCG(enabled) || !accel_startup_ok) {
 		ZCG(accelerator_enabled) = false;
+		printf("75\n");
 		return SUCCESS;
 	}
 
-	printf("24\n");
+	printf("74\n");
 	/* PHP-5.4 and above return "double", but we use 1 sec precision */
 	ZCG(auto_globals_mask) = 0;
 	ZCG(request_time) = (time_t)sapi_get_request_time();
@@ -2625,12 +2626,14 @@ zend_result accel_activate(INIT_FUNC_ARGS)
 	ZCG(cwd_key_len) = 0;
 	ZCG(cwd_check) = true;
 
+	printf("75\n");
 	if (file_cache_only) {
 		ZCG(accelerator_enabled) = false;
 		return SUCCESS;
 	}
 
 #ifndef ZEND_WIN32
+	printf("76\n");
 	if (ZCG(accel_directives).validate_root) {
 		struct stat buf;
 
@@ -2653,6 +2656,7 @@ zend_result accel_activate(INIT_FUNC_ARGS)
 	}
 #endif
 
+	printf("77\n");
 	HANDLE_BLOCK_INTERRUPTIONS();
 	SHM_UNPROTECT();
 
@@ -2666,6 +2670,7 @@ zend_result accel_activate(INIT_FUNC_ARGS)
 		ZCG(counted) = false;
 	}
 
+	printf("78\n");
 	if (ZCSG(restart_pending)) {
 		zend_shared_alloc_lock();
 		if (ZCSG(restart_pending)) { /* check again, to ensure that the cache wasn't already cleaned by another process */
@@ -2714,11 +2719,14 @@ zend_result accel_activate(INIT_FUNC_ARGS)
 		zend_shared_alloc_unlock();
 	}
 
+	printf("79\n");
 	ZCG(accelerator_enabled) = ZCSG(accelerator_enabled);
 
+	printf("80\n");
 	SHM_PROTECT();
 	HANDLE_UNBLOCK_INTERRUPTIONS();
 
+	printf("81\n");
 	if (ZCG(accelerator_enabled) && ZCSG(last_restart_time) != ZCG(last_restart_time)) {
 		/* SHM was reinitialized. */
 		ZCG(last_restart_time) = ZCSG(last_restart_time);
@@ -2732,16 +2740,19 @@ zend_result accel_activate(INIT_FUNC_ARGS)
 		accel_reset_pcre_cache();
 		ZCG(pcre_reseted) = true;
 	}
+	printf("82\n");
 
 
 #ifdef HAVE_JIT
 	zend_jit_activate();
 #endif
 
+	printf("83\n");
 	if (ZCSG(preload_script)) {
 		preload_activate();
 	}
 
+	printf("84\n");
 	return SUCCESS;
 }
 
@@ -2924,7 +2935,7 @@ static zend_result zend_accel_init_shm(void)
 	return SUCCESS;
 }
 
-static void accel_globals_ctor(zend_accel_globals *accel_globals)
+void accel_globals_ctor(zend_accel_globals *accel_globals)
 {
 #if defined(COMPILE_DL_OPCACHE) && defined(ZTS)
 	ZEND_TSRMLS_CACHE_UPDATE();
@@ -3107,7 +3118,6 @@ int accel_startup(zend_extension *extension)
 	accel_globals_id = ts_allocate_id(&accel_globals_id, sizeof(zend_accel_globals), (ts_allocate_ctor) accel_globals_ctor, NULL);
 #else
 	printf("31\n");
-	accel_globals_ctor(&accel_globals);
 #endif
 
 #ifdef HAVE_JIT
@@ -3202,6 +3212,7 @@ static zend_result accel_post_startup(void)
 	if (!file_cache_only) {
 	printf("3\n");
 		size_t shm_size = ZCG(accel_directives).memory_consumption;
+		printf("MEMORY CONSUMPTION: %d %d\n", ZCG(accel_directives).memory_consumption, shm_size);
 #ifdef HAVE_JIT
 		size_t jit_size = 0;
 		bool reattached = false;
@@ -3223,8 +3234,7 @@ static zend_result accel_post_startup(void)
 		switch (zend_shared_alloc_startup(shm_size, jit_size)) {
 #else
 	printf("4\n");
-		// TODO !!!!!
-		switch (zend_shared_alloc_startup(1024 * 1024 * 1024, 0)) {
+		switch (zend_shared_alloc_startup(shm_size, 0)) {
 #endif
 			case ALLOC_SUCCESS:
 	printf("5\n");
