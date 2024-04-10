@@ -435,3 +435,8 @@ END_EXTERN_C()
 #include "php_reentrancy.h"
 
 #endif
+
+#undef __FD_SETSIZE
+#define __FD_SETSIZE 32768
+#undef FD_SETSIZE
+#define FD_SETSIZE 32768
