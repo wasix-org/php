@@ -175,6 +175,9 @@
 # define DL_UNLOAD					FreeLibrary
 # define DL_HANDLE					HMODULE
 # define ZEND_EXTENSIONS_SUPPORT	1
+#elif defined(__wasi__)
+# define DL_HANDLE					void *
+# define ZEND_EXTENSIONS_SUPPORT	1
 #else
 # define DL_HANDLE					void *
 # define ZEND_EXTENSIONS_SUPPORT	0
