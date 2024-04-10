@@ -1093,6 +1093,7 @@ PHP                                                                        NEWS
     opening ATO risk). (CVE-2024-3096) (Jakub Zelenka)
   . Fixed bug GHSA-fjp9-9hwx-59fq (mb_encode_mimeheader runs endlessly for some
     inputs). (CVE-2024-2757) (Alex Dowad)
+  . Fix bug GH-13932 (Attempt to fix mbstring on windows build) (msvc). (David Carlier)
 
 14 Mar 2024, PHP 8.3.4
 
