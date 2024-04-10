@@ -263,19 +263,11 @@ static int create_segments(size_t requested_size, zend_shared_segment ***shared_
 	}
 #endif
 
-#ifdef __wasi__
-	p = malloc(requested_size);
-	if (!p) {
-		*error_in = "malloc";
-		return ALLOC_FAILURE;
-	}
-#else
 	p = mmap(0, requested_size, flags, MAP_SHARED|MAP_ANONYMOUS, fd, 0);
 	if (p == MAP_FAILED) {
 		*error_in = "mmap";
 		return ALLOC_FAILURE;
 	}
-#endif
 
 success: ZEND_ATTRIBUTE_UNUSED;
 	*shared_segments_count = 1;
@@ -297,11 +289,7 @@ success: ZEND_ATTRIBUTE_UNUSED;
 
 static int detach_segment(zend_shared_segment *shared_segment)
 {
-#ifdef __wasi__
-	free(shared_segment->p);
-#else
 	munmap(shared_segment->p, shared_segment->size);
-#endif
 	return 0;
 }
 
