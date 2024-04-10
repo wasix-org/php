@@ -103,6 +103,8 @@ typedef unsigned __int64 accel_time_t;
 typedef time_t accel_time_t;
 #endif
 
+extern zend_extension zend_extension_entry;
+
 typedef enum _zend_accel_restart_reason {
 	ACCEL_RESTART_OOM,    /* restart because of out of memory */
 	ACCEL_RESTART_HASH,   /* restart because of hash overflow */

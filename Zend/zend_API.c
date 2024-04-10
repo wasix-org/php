@@ -2264,14 +2264,17 @@ ZEND_API void add_property_zval_ex(zval *arg, const char *key, size_t key_len, z
 
 ZEND_API zend_result zend_startup_module_ex(zend_module_entry *module) /* {{{ */
 {
+	printf("26 %s\n", module->name);
 	size_t name_len;
 	zend_string *lcname;
 
+	printf("27\n");
 	if (module->module_started) {
 		return SUCCESS;
 	}
 	module->module_started = 1;
 
+	printf("28\n");
 	/* Check module dependencies */
 	if (module->deps) {
 		const zend_module_dep *dep = module->deps;
@@ -2297,6 +2300,7 @@ ZEND_API zend_result zend_startup_module_ex(zend_module_entry *module) /* {{{ */
 		}
 	}
 
+	printf("29\n");
 	/* Initialize module globals */
 	if (module->globals_size) {
 #ifdef ZTS

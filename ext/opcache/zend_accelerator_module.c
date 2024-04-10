@@ -406,10 +406,15 @@ static ZEND_NAMED_FUNCTION(accel_is_readable)
 
 static ZEND_MINIT_FUNCTION(zend_accelerator)
 {
+	printf("20\n");
 	(void)type; /* keep the compiler happy */
 
+	printf("21\n");
 	REGISTER_INI_ENTRIES();
 
+	zend_register_extension(&zend_extension_entry, NULL);
+
+	printf("22\n");
 	return SUCCESS;
 }
 
@@ -572,7 +577,8 @@ zend_module_entry accel_module_entry = {
 
 int start_accel_module(void)
 {
-	return zend_startup_module(&accel_module_entry);
+	// return zend_startup_module(&accel_module_entry);
+	return SUCCESS;
 }
 
 /* {{{ Get the scripts which are accelerated by ZendAccelerator */
