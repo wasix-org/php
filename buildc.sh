@@ -2,8 +2,6 @@
 
 set -eou
 
-make clean
-
 ./buildconf --force
 
 ZLIB_CFLAGS="-I../wasix-deps/include/zlib" \
