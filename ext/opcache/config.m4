@@ -167,62 +167,63 @@ int main(void) {
   AC_MSG_RESULT([$have_shm_ipc])
 
   AC_MSG_CHECKING(for mmap() using MAP_ANON shared memory support)
-  AC_RUN_IFELSE([AC_LANG_SOURCE([[
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/mman.h>
-#include <unistd.h>
-#include <string.h>
-
-#ifndef MAP_ANON
-# ifdef MAP_ANONYMOUS
-#  define MAP_ANON MAP_ANONYMOUS
-# endif
-#endif
-#ifndef MAP_FAILED
-# define MAP_FAILED ((void*)-1)
-#endif
-
-int main(void) {
-  pid_t pid;
-  int status;
-  char *shm;
-
-  shm = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
-  if (shm == MAP_FAILED) {
-    return 1;
-  }
-
-  strcpy(shm, "hello");
-
-  pid = fork();
-  if (pid < 0) {
-    return 5;
-  } else if (pid == 0) {
-    strcpy(shm, "bye");
-    return 6;
-  }
-  if (wait(&status) != pid) {
-    return 7;
-  }
-  if (!WIFEXITED(status) || WEXITSTATUS(status) != 6) {
-    return 8;
-  }
-  if (strcmp(shm, "bye") != 0) {
-    return 9;
-  }
-  return 0;
-}
-]])],[have_shm_mmap_anon=yes],[have_shm_mmap_anon=no],[
-  case $host_alias in
-    *linux*)
-      have_shm_mmap_anon=yes
-      ;;
-    *)
-      have_shm_mmap_anon=no
-      ;;
-  esac
-])
+dnl   AC_RUN_IFELSE([AC_LANG_SOURCE([[
+dnl #include <sys/types.h>
+dnl #include <sys/wait.h>
+dnl #include <sys/mman.h>
+dnl #include <unistd.h>
+dnl #include <string.h>
+dnl
+dnl #ifndef MAP_ANON
+dnl # ifdef MAP_ANONYMOUS
+dnl #  define MAP_ANON MAP_ANONYMOUS
+dnl # endif
+dnl #endif
+dnl #ifndef MAP_FAILED
+dnl # define MAP_FAILED ((void*)-1)
+dnl #endif
+dnl
+dnl int main(void) {
+dnl   pid_t pid;
+dnl   int status;
+dnl   char *shm;
+dnl
+dnl   shm = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANON, -1, 0);
+dnl   if (shm == MAP_FAILED) {
+dnl     return 1;
+dnl   }
+dnl
+dnl   strcpy(shm, "hello");
+dnl
+dnl   pid = fork();
+dnl   if (pid < 0) {
+dnl     return 5;
+dnl   } else if (pid == 0) {
+dnl     strcpy(shm, "bye");
+dnl     return 6;
+dnl   }
+dnl   if (wait(&status) != pid) {
+dnl     return 7;
+dnl   }
+dnl   if (!WIFEXITED(status) || WEXITSTATUS(status) != 6) {
+dnl     return 8;
+dnl   }
+dnl   if (strcmp(shm, "bye") != 0) {
+dnl     return 9;
+dnl   }
+dnl   return 0;
+dnl }
+dnl ]])],[have_shm_mmap_anon=yes],[have_shm_mmap_anon=no],[
+dnl   case $host_alias in
+dnl     *linux*)
+dnl       have_shm_mmap_anon=yes
+dnl       ;;
+dnl     *)
+dnl       have_shm_mmap_anon=no
+dnl       ;;
+dnl   esac
+dnl ])
+  have_shm_mmap_anon=yes
   if test "$have_shm_mmap_anon" = "yes"; then
     AC_DEFINE(HAVE_SHM_MMAP_ANON, 1, [Define if you have mmap(MAP_ANON) SHM support])
   fi

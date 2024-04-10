@@ -27,7 +27,7 @@ static int last_resource_number;
 
 zend_result zend_load_extension(const char *path)
 {
-#if ZEND_EXTENSIONS_SUPPORT
+#if ZEND_EXTENSIONS_SUPPORT && !defined(__wasi__)
 	DL_HANDLE handle;
 
 	handle = DL_LOAD(path);
@@ -61,7 +61,7 @@ zend_result zend_load_extension(const char *path)
 
 zend_result zend_load_extension_handle(DL_HANDLE handle, const char *path)
 {
-#if ZEND_EXTENSIONS_SUPPORT
+#if ZEND_EXTENSIONS_SUPPORT && !defined(__wasi__)
 	zend_extension *new_extension;
 
 	const zend_extension_version_info *extension_version_info = (const zend_extension_version_info *) DL_FETCH_SYMBOL(handle, "extension_version_info");
@@ -226,7 +226,7 @@ void zend_shutdown_extensions(void)
 
 void zend_extension_dtor(zend_extension *extension)
 {
-#if ZEND_EXTENSIONS_SUPPORT && !ZEND_DEBUG
+#if ZEND_EXTENSIONS_SUPPORT && !ZEND_DEBUG && !defined(__wasi__)
 	if (extension->handle && !getenv("ZEND_DONT_UNLOAD_MODULES")) {
 		DL_UNLOAD(extension->handle);
 	}
@@ -270,7 +270,7 @@ ZEND_API int zend_get_resource_handle(const char *module_name)
  *
  * The extension slot has been available since PHP 7.4 on user functions and
  * has been available since PHP 8.2 on internal functions.
- * 
+ *
  * # Safety
  * The extension slot made available by calling this function is initialized on
  * the first call made to the function in that request. If you need to
@@ -278,13 +278,13 @@ ZEND_API int zend_get_resource_handle(const char *module_name)
  *
  * The function cache slots are not available if the function is a trampoline,
  * which can be checked with something like:
- * 
+ *
  *     if (fbc->type == ZEND_USER_FUNCTION
  *         && !(fbc->op_array.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE)
  *     ) {
  *         // Use ZEND_OP_ARRAY_EXTENSION somehow
  *     }
- */  
+ */
 ZEND_API int zend_get_op_array_extension_handle(const char *module_name)
 {
 	int handle = zend_op_array_extension_handles++;
