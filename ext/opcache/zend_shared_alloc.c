@@ -176,6 +176,7 @@ static int zend_shared_alloc_try(const zend_shared_memory_handler_entry *he, siz
 
 int zend_shared_alloc_startup(size_t requested_size, size_t reserved_size)
 {
+	printf("51\n");
 	zend_shared_segment **tmp_shared_segments;
 	size_t shared_segments_array_size;
 	zend_smm_shared_globals tmp_shared_globals, *p_tmp_shared_globals;
@@ -187,15 +188,20 @@ int zend_shared_alloc_startup(size_t requested_size, size_t reserved_size)
 	/* shared_free must be valid before we call zend_shared_alloc()
 	 * - make it temporarily point to a local variable
 	 */
+	printf("52\n");
 	smm_shared_globals = &tmp_shared_globals;
 	ZSMMG(shared_free) = requested_size - reserved_size; /* goes to tmp_shared_globals.shared_free */
 
+	printf("53\n");
+#ifndef __wasi__
 #ifndef ZEND_WIN32
 	zend_shared_alloc_create_lock(ZCG(accel_directives).lockfile_path);
 #else
 	zend_shared_alloc_create_lock();
 #endif
+#endif
 
+	printf("54\n");
 	if (ZCG(accel_directives).memory_model && ZCG(accel_directives).memory_model[0]) {
 		const char *model = ZCG(accel_directives).memory_model;
 		/* "cgi" is really "shm"... */
@@ -203,6 +209,7 @@ int zend_shared_alloc_startup(size_t requested_size, size_t reserved_size)
 			model = "shm";
 		}
 
+	printf("55\n");
 		for (he = handler_table; he->name; he++) {
 			if (strcmp(model, he->name) == 0) {
 				res = zend_shared_alloc_try(he, requested_size, &ZSMMG(shared_segments), &ZSMMG(shared_segments_count), &error_in);
@@ -214,6 +221,7 @@ int zend_shared_alloc_startup(size_t requested_size, size_t reserved_size)
 		}
 	}
 
+	printf("56\n");
 	if (res == FAILED_REATTACHED) {
 		smm_shared_globals = NULL;
 		return res;
@@ -225,9 +233,11 @@ int zend_shared_alloc_startup(size_t requested_size, size_t reserved_size)
 	}
 #endif
 
+	printf("57\n");
 	if (!g_shared_alloc_handler) {
 		/* try memory handlers in order */
 		for (he = handler_table; he->name; he++) {
+			printf("Allocating %d %d %d\n", requested_size, ZSMMG(shared_segments), ZSMMG(shared_segments_count));
 			res = zend_shared_alloc_try(he, requested_size, &ZSMMG(shared_segments), &ZSMMG(shared_segments_count), &error_in);
 			if (res) {
 				/* this model works! */
@@ -236,11 +246,14 @@ int zend_shared_alloc_startup(size_t requested_size, size_t reserved_size)
 		}
 	}
 
+	printf("58\n");
 	if (!g_shared_alloc_handler) {
 		no_memory_bailout(requested_size, error_in);
+	printf("60\n");
 		return ALLOC_FAILURE;
 	}
 
+	printf("59\n");
 	if (res == SUCCESSFULLY_REATTACHED) {
 		return res;
 	}
@@ -251,18 +264,22 @@ int zend_shared_alloc_startup(size_t requested_size, size_t reserved_size)
 	}
 #endif
 
+	printf("61\n");
 	for (i = 0; i < ZSMMG(shared_segments_count); i++) {
 		ZSMMG(shared_segments)[i]->end = ZSMMG(shared_segments)[i]->size;
 	}
 
+	printf("62\n");
 	shared_segments_array_size = ZSMMG(shared_segments_count) * S_H(segment_type_size)();
 
 	/* move shared_segments and shared_free to shared memory */
 	ZCG(locked) = 1; /* no need to perform a real lock at this point */
 
+	printf("63\n");
 	p_tmp_shared_globals = (zend_smm_shared_globals *) zend_shared_alloc(sizeof(zend_smm_shared_globals));
 	if (!p_tmp_shared_globals) {
 		zend_accel_error_noreturn(ACCEL_LOG_FATAL, "Insufficient shared memory!");
+	printf("64\n");
 		return ALLOC_FAILURE;
 	}
 	memset(p_tmp_shared_globals, 0, sizeof(zend_smm_shared_globals));
@@ -270,9 +287,11 @@ int zend_shared_alloc_startup(size_t requested_size, size_t reserved_size)
 	tmp_shared_segments = zend_shared_alloc(shared_segments_array_size + ZSMMG(shared_segments_count) * sizeof(void *));
 	if (!tmp_shared_segments) {
 		zend_accel_error_noreturn(ACCEL_LOG_FATAL, "Insufficient shared memory!");
+	printf("65\n");
 		return ALLOC_FAILURE;
 	}
 
+	printf("66\n");
 	copy_shared_segments(tmp_shared_segments, ZSMMG(shared_segments)[0], ZSMMG(shared_segments_count), S_H(segment_type_size)());
 
 	*p_tmp_shared_globals = tmp_shared_globals;
@@ -284,9 +303,11 @@ int zend_shared_alloc_startup(size_t requested_size, size_t reserved_size)
 	ZSMMG(shared_memory_state).positions = (size_t *)zend_shared_alloc(sizeof(size_t) * ZSMMG(shared_segments_count));
 	if (!ZSMMG(shared_memory_state).positions) {
 		zend_accel_error_noreturn(ACCEL_LOG_FATAL, "Insufficient shared memory!");
+	printf("69\n");
 		return ALLOC_FAILURE;
 	}
 
+	printf("67\n");
 	if (reserved_size) {
 		i = ZSMMG(shared_segments_count) - 1;
 		if (ZSMMG(shared_segments)[i]->size - ZSMMG(shared_segments)[i]->pos >= reserved_size) {
@@ -295,12 +316,14 @@ int zend_shared_alloc_startup(size_t requested_size, size_t reserved_size)
 			ZSMMG(reserved_size) = reserved_size;
 		} else {
 			zend_accel_error_noreturn(ACCEL_LOG_FATAL, "Insufficient shared memory!");
+	printf("68\n");
 			return ALLOC_FAILURE;
 		}
 	}
 
 	ZCG(locked) = 0;
 
+	printf("70\n");
 	return res;
 }
 
