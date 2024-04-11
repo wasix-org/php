@@ -800,7 +800,9 @@ static void executor_globals_ctor(zend_executor_globals *executor_globals) /* {{
 #endif
 	executor_globals->saved_fpu_cw_ptr = NULL;
 	executor_globals->active = 0;
+#ifndef __wasi__ 
 	executor_globals->bailout = NULL;
+#endif
 	executor_globals->error_handling  = EH_NORMAL;
 	executor_globals->exception_class = NULL;
 	executor_globals->exception = NULL;
@@ -1196,7 +1198,7 @@ ZEND_COLD void zenderror(const char *error) /* {{{ */
 
 ZEND_API ZEND_COLD ZEND_NORETURN void _zend_bailout(const char *filename, uint32_t lineno) /* {{{ */
 {
-
+#ifndef __wasi__
 	if (!EG(bailout)) {
 		zend_output_debug_string(1, "%s(%d) : Bailed out without a bailout address!", filename, lineno);
 		exit(-1);
@@ -1208,6 +1210,7 @@ ZEND_API ZEND_COLD ZEND_NORETURN void _zend_bailout(const char *filename, uint32
 	CG(memoize_mode) = 0;
 	EG(current_execute_data) = NULL;
 	LONGJMP(*EG(bailout), FAILURE);
+#endif
 }
 /* }}} */
 

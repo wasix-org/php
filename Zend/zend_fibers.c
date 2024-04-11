@@ -108,7 +108,9 @@ typedef struct _zend_fiber_vm_state {
 	zend_execute_data *current_execute_data;
 	int error_reporting;
 	uint32_t jit_trace_num;
+	#ifndef __wasi__ 
 	JMP_BUF *bailout;
+	#endif 
 	zend_fiber *active_fiber;
 #ifdef ZEND_CHECK_STACK_LIMIT
 	void *stack_base;
@@ -125,7 +127,9 @@ static zend_always_inline void zend_fiber_capture_vm_state(zend_fiber_vm_state *
 	state->current_execute_data = EG(current_execute_data);
 	state->error_reporting = EG(error_reporting);
 	state->jit_trace_num = EG(jit_trace_num);
+	#ifndef __wasi__ 
 	state->bailout = EG(bailout);
+	#endif
 	state->active_fiber = EG(active_fiber);
 #ifdef ZEND_CHECK_STACK_LIMIT
 	state->stack_base = EG(stack_base);
@@ -142,7 +146,9 @@ static zend_always_inline void zend_fiber_restore_vm_state(zend_fiber_vm_state *
 	EG(current_execute_data) = state->current_execute_data;
 	EG(error_reporting) = state->error_reporting;
 	EG(jit_trace_num) = state->jit_trace_num;
+	#ifndef __wasi__ 
 	EG(bailout) = state->bailout;
+	#endif
 	EG(active_fiber) = state->active_fiber;
 #ifdef ZEND_CHECK_STACK_LIMIT
 	EG(stack_base) = state->stack_base;

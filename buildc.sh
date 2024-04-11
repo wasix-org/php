@@ -33,6 +33,6 @@ LIBS="-Wl,--shared-memory -Wl,--max-memory=4294967296 -Wl,--import-memory -Wl,--
   --enable-opcache --disable-opcache-jit --disable-huge-code-pages --disable-rpath --disable-cgi --with-curl=no --with-zlib \
   --without-openssl --disable-zend-signals --prefix=/Users/arshia/repos/wasmer/php/prefix \
   --with-valgrind=no --with-pcre-jit=no --without-iconv --disable-huge-code-pages --disable-phpdbg \
-  --enable-fiber-asm --program-suffix=".wasm"
+  --disable-fiber-asm --disable-session --program-suffix=".wasm"
 
 ./build.sh

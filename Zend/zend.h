@@ -255,8 +255,14 @@ typedef struct _zend_utility_values {
 
 typedef size_t (*zend_write_func_t)(const char *str, size_t str_length);
 
-#define zend_bailout()		_zend_bailout(__FILE__, __LINE__)
 
+#ifndef __wasi__ 
+#define zend_bailout()		_zend_bailout(__FILE__, __LINE__)
+#else
+#define zend_bailout()		0
+#endif
+
+#ifndef __wasi__ 
 #define zend_try												\
 	{															\
 		JMP_BUF *__orig_bailout = EG(bailout);					\
@@ -272,6 +278,17 @@ typedef size_t (*zend_write_func_t)(const char *str, size_t str_length);
 		EG(bailout) = __orig_bailout;							\
 	}
 #define zend_first_try		EG(bailout)=NULL;	zend_try
+#else
+#define zend_try												\
+	{															\
+		if (1) {
+#define zend_catch												\
+		} else {
+#define zend_end_try()											\
+		}														\
+	}
+#define zend_first_try		zend_try
+#endif
 
 BEGIN_EXTERN_C()
 void zend_startup(zend_utility_functions *utility_functions);

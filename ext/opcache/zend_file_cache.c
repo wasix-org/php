@@ -287,7 +287,10 @@ static void *zend_file_cache_unserialize_interned(zend_string *str, bool in_shm)
 		ret = zend_shared_alloc(size);
 		if (!ret) {
 			zend_accel_schedule_restart_if_necessary(ACCEL_RESTART_OOM);
+			
+			#ifndef __wasi__ 
 			LONGJMP(*EG(bailout), FAILURE);
+			#endif
 		}
 		memcpy(ret, str, size);
 		/* String wasn't interned but we will use it as interned anyway */

@@ -373,7 +373,7 @@ char *alloca();
 # define XtOffsetOf(s_type, field) offsetof(s_type, field)
 #endif
 
-#if defined(HAVE_SIGSETJMP) && !defined(__wasm32)
+#if defined(HAVE_SIGSETJMP) && !defined(__wasi__)
 # define SETJMP(a) sigsetjmp(a, 0)
 # define LONGJMP(a,b) siglongjmp(a, b)
 # define JMP_BUF sigjmp_buf
