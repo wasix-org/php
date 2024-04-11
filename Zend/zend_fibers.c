@@ -39,7 +39,7 @@
 # include <ucontext.h>
 #endif
 
-#ifndef ZEND_WIN32
+#if !defined(ZEND_WIN32) && !defined(__wasi__)
 # include <unistd.h>
 # include <sys/mman.h>
 # include <limits.h>
@@ -236,7 +236,11 @@ static zend_fiber_stack *zend_fiber_stack_allocate(size_t size)
 		return NULL;
 	}
 # endif
+#elif defined(__wasi__)
+	printf("calling malloc instead of mmap in zend_fiber_stack_allocate\n");
+	pointer = malloc(alloc_size);
 #else
+	printf("calling malloc in zend_fiber_stack_allocate\n");
 	pointer = mmap(NULL, alloc_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
 
 	if (pointer == MAP_FAILED) {
@@ -302,7 +306,11 @@ static void zend_fiber_stack_free(zend_fiber_stack *stack)
 
 #ifdef ZEND_WIN32
 	VirtualFree(pointer, 0, MEM_RELEASE);
+#elif defined(__wasi__)
+	printf("calling free in zend_fiber_stack_free\n");
+	free(pointer);
 #else
+	printf("calling munmap in zend_fiber_stack_free"\n);
 	munmap(pointer, stack->size + ZEND_FIBER_GUARD_PAGES * page_size);
 #endif
 
@@ -356,7 +364,7 @@ static ZEND_NORETURN void zend_fiber_trampoline(boost_context_data data)
 	__sanitizer_finish_switch_fiber(NULL, &from->stack->asan_pointer, &from->stack->asan_size);
 #endif
 
-#ifndef ZEND_FIBER_UCONTEXT
+#if !defined(ZEND_FIBER_UCONTEXT) && !defined(__wasi__)
 	/* Get the context that resumed us and update its handle to allow for symmetric coroutines. */
 	from->handle = data.handle;
 #endif

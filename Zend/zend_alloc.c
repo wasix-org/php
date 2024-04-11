@@ -444,7 +444,12 @@ static void zend_mm_munmap(void *addr, size_t size)
 #endif
 		}
 	}
+
+#elif defined(__wasi__)
+	printf("calling free instead of zend_mm_munmap\n");
+	free(addr);
 #else
+	printf("calling zend_mm_munmap\n");
 	if (munmap(addr, size) != 0) {
 #if ZEND_MM_ERROR
 		fprintf(stderr, "\nmunmap() failed: [%d] %s\n", errno, strerror(errno));
@@ -477,7 +482,11 @@ static void *zend_mm_mmap_fixed(void *addr, size_t size)
 	flags |= MAP_FIXED | MAP_EXCL;
 #elif defined(MAP_TRYFIXED)
 	flags |= MAP_TRYFIXED;
+#elif defined(__wasi__)
+	printf("skipping zend_mm_mmap_fixed\n");
+	return NULL;
 #endif
+	printf("calling zend_mm_mmap_fixed\n");
 	/* MAP_FIXED leads to discarding of the old mapping, so it can't be used. */
 	void *ptr = mmap(addr, size, PROT_READ | PROT_WRITE, flags /*| MAP_POPULATE | MAP_HUGETLB*/, ZEND_MM_FD, 0);
 
@@ -497,6 +506,15 @@ static void *zend_mm_mmap_fixed(void *addr, size_t size)
 
 static void *zend_mm_mmap(size_t size)
 {
+#if defined(__wasi__)
+	printf("calling malloc instead of zend_mm_mmap\n");
+	void* ptr = malloc(size + ZEND_MMAP_AHEAD);
+	memset(ptr, 0, size + ZEND_MMAP_AHEAD);
+	return ptr;
+#else
+
+printf("calling zend_mm_mmap\n");
+
 #ifdef _WIN32
 	void *ptr = VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
@@ -537,6 +555,7 @@ static void *zend_mm_mmap(size_t size)
 	}
 	zend_mmap_set_name(ptr, size, "zend_alloc");
 	return ptr;
+#endif
 #endif
 }
 
@@ -718,6 +737,14 @@ static zend_always_inline void zend_mm_hugepage(void* ptr, size_t size)
 
 static void *zend_mm_chunk_alloc_int(size_t size, size_t alignment)
 {
+#if defined(__wasi__)
+	printf("calling aligned_alloc in zend_mm_chunk_alloc_int\n");
+	void* ptr = aligned_alloc(alignment, size + ZEND_MMAP_AHEAD);
+	memset(ptr, 0, size + ZEND_MMAP_AHEAD);
+ 	return ptr;
+#else
+
+	printf("calling mmap in zend_mm_chunk_alloc_int\n");
 	void *ptr = zend_mm_mmap(size);
 
 	if (ptr == NULL) {
@@ -768,6 +795,7 @@ static void *zend_mm_chunk_alloc_int(size_t size, size_t alignment)
 #endif
 		return ptr;
 	}
+#endif
 }
 
 static void *zend_mm_chunk_alloc(zend_mm_heap *heap, size_t size, size_t alignment)
@@ -2950,7 +2978,7 @@ ZEND_API void start_memory_manager(void)
 #else
 	alloc_globals_ctor(&alloc_globals);
 #endif
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__wasi__)
 #  if defined(_SC_PAGESIZE)
 	REAL_PAGE_SIZE = sysconf(_SC_PAGESIZE);
 #  elif defined(_SC_PAGE_SIZE)
