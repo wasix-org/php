@@ -1,0 +1,7 @@
+#! /usr/bin/env sh
+
+set -eou
+
+make -j14
+
+./ne
