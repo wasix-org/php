@@ -329,6 +329,8 @@ zend_string* ZEND_FASTCALL accel_new_interned_string(zend_string *str);
 
 uint32_t zend_accel_get_class_name_map_ptr(zend_string *type_name);
 
+void accel_globals_ctor(zend_accel_globals *accel_globals);
+
 END_EXTERN_C()
 
 /* memory write protection */
