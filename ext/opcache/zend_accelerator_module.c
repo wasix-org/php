@@ -67,7 +67,6 @@ static ZEND_INI_MH(OnUpdateMemoryConsumption)
 {
 	zend_long *p = (zend_long *) ZEND_INI_GET_ADDR();
 	zend_long memsize = atoi(ZSTR_VAL(new_value));
-	printf("Setting memory consumption to %d\n", memsize);
 	/* sanity check we must use at least 8 MB */
 	if (memsize < 8) {
 		zend_accel_error(ACCEL_LOG_WARNING, "opcache.memory_consumption is set below the required 8MB.\n");
@@ -407,21 +406,16 @@ static ZEND_NAMED_FUNCTION(accel_is_readable)
 
 static ZEND_MINIT_FUNCTION(zend_accelerator)
 {
-	printf("20\n");
 	(void)type; /* keep the compiler happy */
 
 	// Run the ctor before registering the INI entries, as that will
 	// read and set the values
 	accel_globals_ctor(&accel_globals);
 
-	printf("21\n");
 	REGISTER_INI_ENTRIES();
 
 	zend_register_extension(&zend_extension_entry, NULL);
 
-	printf("MEMORY CONSUMPTION: %d\n", ZCG(accel_directives).memory_consumption);
-
-	printf("22\n");
 	return SUCCESS;
 }
 

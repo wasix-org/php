@@ -3,11 +3,10 @@
 set -eou
 
 ~/repos/wasmer/wasmer/target/release/wasmer run php.wasm \
-  -vvv \
   --singlepass \
   --env USE_ZEND_ALLOC=0 \
   --net \
-  --mapdir /app:../../php-local/wordpress-wasmer-starter \
+  --mapdir /app:../wordpress-wasmer-starter \
   -- \
   -S localhost:8080 \
   -t /app/app \
