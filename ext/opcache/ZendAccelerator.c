@@ -2606,14 +2606,11 @@ static void accel_reset_pcre_cache(void)
 
 zend_result accel_activate(INIT_FUNC_ARGS)
 {
-	printf("73 %d %d\n", (int)ZCG(enabled), (int)accel_startup_ok);
 	if (!ZCG(enabled) || !accel_startup_ok) {
 		ZCG(accelerator_enabled) = false;
-		printf("75\n");
 		return SUCCESS;
 	}
 
-	printf("74\n");
 	/* PHP-5.4 and above return "double", but we use 1 sec precision */
 	ZCG(auto_globals_mask) = 0;
 	ZCG(request_time) = (time_t)sapi_get_request_time();
@@ -2626,14 +2623,12 @@ zend_result accel_activate(INIT_FUNC_ARGS)
 	ZCG(cwd_key_len) = 0;
 	ZCG(cwd_check) = true;
 
-	printf("75\n");
 	if (file_cache_only) {
 		ZCG(accelerator_enabled) = false;
 		return SUCCESS;
 	}
 
 #ifndef ZEND_WIN32
-	printf("76\n");
 	if (ZCG(accel_directives).validate_root) {
 		struct stat buf;
 
@@ -2656,7 +2651,6 @@ zend_result accel_activate(INIT_FUNC_ARGS)
 	}
 #endif
 
-	printf("77\n");
 	HANDLE_BLOCK_INTERRUPTIONS();
 	SHM_UNPROTECT();
 
@@ -2670,7 +2664,6 @@ zend_result accel_activate(INIT_FUNC_ARGS)
 		ZCG(counted) = false;
 	}
 
-	printf("78\n");
 	if (ZCSG(restart_pending)) {
 		zend_shared_alloc_lock();
 		if (ZCSG(restart_pending)) { /* check again, to ensure that the cache wasn't already cleaned by another process */
@@ -2719,14 +2712,11 @@ zend_result accel_activate(INIT_FUNC_ARGS)
 		zend_shared_alloc_unlock();
 	}
 
-	printf("79\n");
 	ZCG(accelerator_enabled) = ZCSG(accelerator_enabled);
 
-	printf("80\n");
 	SHM_PROTECT();
 	HANDLE_UNBLOCK_INTERRUPTIONS();
 
-	printf("81\n");
 	if (ZCG(accelerator_enabled) && ZCSG(last_restart_time) != ZCG(last_restart_time)) {
 		/* SHM was reinitialized. */
 		ZCG(last_restart_time) = ZCSG(last_restart_time);
@@ -2740,19 +2730,16 @@ zend_result accel_activate(INIT_FUNC_ARGS)
 		accel_reset_pcre_cache();
 		ZCG(pcre_reseted) = true;
 	}
-	printf("82\n");
 
 
 #ifdef HAVE_JIT
 	zend_jit_activate();
 #endif
 
-	printf("83\n");
 	if (ZCSG(preload_script)) {
 		preload_activate();
 	}
 
-	printf("84\n");
 	return SUCCESS;
 }
 
@@ -3113,29 +3100,24 @@ static void accel_move_code_to_huge_pages(void)
 
 int accel_startup(zend_extension *extension)
 {
-	printf("30\n");
 #ifdef ZTS
 	accel_globals_id = ts_allocate_id(&accel_globals_id, sizeof(zend_accel_globals), (ts_allocate_ctor) accel_globals_ctor, NULL);
 #else
-	printf("31\n");
 #endif
 
 #ifdef HAVE_JIT
 	zend_jit_init();
 #endif
 
-	printf("32\n");
 #ifdef ZEND_WIN32
 # if !defined(__has_feature) || !__has_feature(address_sanitizer)
 	_setmaxstdio(2048); /* The default configuration is limited to 512 stdio files */
 # endif
 #endif
 
-	printf("33\n");
 	if (start_accel_module() == FAILURE) {
 		accel_startup_ok = false;
 		zend_error(E_WARNING, ACCELERATOR_PRODUCT_NAME ": module registration failed!");
-		printf("34\n");
 		return FAILURE;
 	}
 
@@ -3156,42 +3138,33 @@ int accel_startup(zend_extension *extension)
 	}
 #endif
 
-	printf("35\n");
 	/* no supported SAPI found - disable acceleration and stop initialization */
 	if (accel_find_sapi() == FAILURE) {
-		printf("36\n");
 		accel_startup_ok = false;
 		if (!ZCG(accel_directives).enable_cli &&
 		    strcmp(sapi_module.name, "cli") == 0) {
-			printf("38\n");
 			zps_startup_failure("Opcode Caching is disabled for CLI", NULL, accelerator_remove_cb);
 		} else {
-			printf("39\n");
 			zps_startup_failure("Opcode Caching is only supported in Apache, FPM, FastCGI, FrankenPHP, LiteSpeed and uWSGI SAPIs", NULL, accelerator_remove_cb);
 		}
 		return SUCCESS;
 	}
 
-	printf("40\n");
-	// if (ZCG(enabled) == 0) {
-	// 	printf("41\n");
-	// 	return SUCCESS ;
-	// }
+	if (ZCG(enabled) == 0) {
+		return SUCCESS ;
+	}
 
-	printf("42\n");
 	orig_post_startup_cb = zend_post_startup_cb;
 	zend_post_startup_cb = accel_post_startup;
 
 	/* Prevent unloading */
 	extension->handle = 0;
 
-	printf("43\n");
 	return SUCCESS;
 }
 
 static zend_result accel_post_startup(void)
 {
-	printf("1\n");
 	zend_function *func;
 	zend_ini_entry *ini_entry;
 
@@ -3204,15 +3177,12 @@ static zend_result accel_post_startup(void)
 		}
 	}
 
-	printf("2\n");
 /********************************************/
 /* End of non-SHM dependent initializations */
 /********************************************/
 	file_cache_only = ZCG(accel_directives).file_cache_only;
 	if (!file_cache_only) {
-	printf("3\n");
 		size_t shm_size = ZCG(accel_directives).memory_consumption;
-		printf("MEMORY CONSUMPTION: %d %d\n", ZCG(accel_directives).memory_consumption, shm_size);
 #ifdef HAVE_JIT
 		size_t jit_size = 0;
 		bool reattached = false;
@@ -3233,18 +3203,15 @@ static zend_result accel_post_startup(void)
 
 		switch (zend_shared_alloc_startup(shm_size, jit_size)) {
 #else
-	printf("4\n");
 		switch (zend_shared_alloc_startup(shm_size, 0)) {
 #endif
 			case ALLOC_SUCCESS:
-	printf("5\n");
 				if (zend_accel_init_shm() == FAILURE) {
 					accel_startup_ok = false;
 					return FAILURE;
 				}
 				break;
 			case ALLOC_FAILURE:
-	printf("6\n");
 				accel_startup_ok = false;
 				zend_accel_error_noreturn(ACCEL_LOG_FATAL, "Failure to initialize shared memory structures - probably not enough shared memory.");
 				return SUCCESS;
@@ -3261,14 +3228,12 @@ static zend_result accel_post_startup(void)
 				zend_shared_alloc_unlock();
 				break;
 			case FAILED_REATTACHED:
-	printf("7\n");
 				accel_startup_ok = false;
 				zend_accel_error_noreturn(ACCEL_LOG_FATAL, "Failure to initialize shared memory structures - cannot reattach to exiting shared memory.");
 				return SUCCESS;
 				break;
 #if ENABLE_FILE_CACHE_FALLBACK
 			case ALLOC_FALLBACK:
-	printf("8\n");
 				zend_shared_alloc_lock();
 				file_cache_only = true;
 				fallback_process = true;
@@ -3283,7 +3248,6 @@ static zend_result accel_post_startup(void)
 		/* remember the last restart time in the process memory */
 		ZCG(last_restart_time) = ZCSG(last_restart_time);
 
-	printf("9\n");
 		zend_shared_alloc_lock();
 #ifdef HAVE_JIT
 		if (JIT_G(enabled)) {
@@ -3300,10 +3264,8 @@ static zend_result accel_post_startup(void)
 			}
 		}
 #endif
-	printf("10\n");
 		zend_shared_alloc_save_state();
 		zend_shared_alloc_unlock();
-	printf("11\n");
 
 		SHM_PROTECT();
 	} else if (!ZCG(accel_directives).file_cache) {
@@ -3316,30 +3278,25 @@ static zend_result accel_post_startup(void)
 		JIT_G(on) = false;
 #endif
 		accel_shared_globals = calloc(1, sizeof(zend_accel_shared_globals));
-	printf("12\n");
 	}
 #if ENABLE_FILE_CACHE_FALLBACK
 file_cache_fallback:
 #endif
 
-	printf("13\n");
 	/* Override compiler */
 	accelerator_orig_compile_file = zend_compile_file;
 	zend_compile_file = persistent_compile_file;
 
-	printf("14\n");
 	/* Override stream opener function (to eliminate open() call caused by
 	 * include/require statements ) */
 	accelerator_orig_zend_stream_open_function = zend_stream_open_function;
 	zend_stream_open_function = persistent_stream_open_function;
 
-	printf("15\n");
 	/* Override path resolver function (to eliminate stat() calls caused by
 	 * include_once/require_once statements */
 	accelerator_orig_zend_resolve_path = zend_resolve_path;
 	zend_resolve_path = persistent_zend_resolve_path;
 
-	printf("16\n");
 	/* Override chdir() function */
 	if ((func = zend_hash_str_find_ptr(CG(function_table), "chdir", sizeof("chdir")-1)) != NULL &&
 	    func->type == ZEND_INTERNAL_FUNCTION) {
@@ -3349,7 +3306,6 @@ file_cache_fallback:
 	ZCG(cwd) = NULL;
 	ZCG(include_path) = NULL;
 
-	printf("17\n");
 	/* Override "include_path" modifier callback */
 	if ((ini_entry = zend_hash_str_find_ptr(EG(ini_directives), "include_path", sizeof("include_path")-1)) != NULL) {
 		ZCG(include_path) = ini_entry->value;
@@ -3362,7 +3318,6 @@ file_cache_fallback:
 	/* Override file_exists(), is_file() and is_readable() */
 	zend_accel_override_file_functions();
 
-	printf("18\n");
 	/* Load black list */
 	accel_blacklist.entries = NULL;
 	if (ZCG(enabled) && accel_startup_ok &&
