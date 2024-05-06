@@ -2,6 +2,11 @@
 
 set -eou
 
+export \
+  CC=clang
+  CXX=clang
+  CFLAGS="-rdynamic -fno-omit-frame-pointer -g"
+
 ./buildconf --force
 
 ./configure --without-iconv --disable-phpdbg --with-zlib \
