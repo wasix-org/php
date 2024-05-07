@@ -2903,8 +2903,10 @@ static void alloc_globals_ctor(zend_alloc_globals *alloc_globals)
 	char *tmp;
 
 #if ZEND_MM_CUSTOM
+#ifndef __wasi__
 	tmp = getenv("USE_ZEND_ALLOC");
 	if (tmp && !ZEND_ATOL(tmp)) {
+#endif
 		bool tracked = (tmp = getenv("USE_TRACKED_ALLOC")) && ZEND_ATOL(tmp);
 		zend_mm_heap *mm_heap = alloc_globals->mm_heap = malloc(sizeof(zend_mm_heap));
 		memset(mm_heap, 0, sizeof(zend_mm_heap));
@@ -2926,7 +2928,9 @@ static void alloc_globals_ctor(zend_alloc_globals *alloc_globals)
 			zend_hash_init(mm_heap->tracked_allocs, 1024, NULL, NULL, 1);
 		}
 		return;
+#ifndef __wasi__
 	}
+#endif
 #endif
 
 	tmp = getenv("USE_ZEND_ALLOC_HUGE_PAGES");
