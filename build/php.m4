@@ -1482,6 +1482,9 @@ int main(void) {
     *linux*)
       cookie_io_functions_use_off64_t=yes
       ;;
+    *wasm*)
+      cookie_io_functions_use_off64_t=yes
+      ;;
     *)
       cookie_io_functions_use_off64_t=no
       ;;

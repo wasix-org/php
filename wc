@@ -3,6 +3,8 @@
 set -eou
 
 export \
+  CURL_CFLAGS="-I../wasix-deps/include/curl" \
+  CURL_LIBS="-L../wasix-deps/lib -lcurl -lcrypto -lssl" \
   ZLIB_CFLAGS="-I../wasix-deps/include/zlib" \
   ZLIB_LIBS="-L../wasix-deps/lib -lz" \
   LIBXML_CFLAGS="-I../wasix-deps/include/libxml2" \
@@ -11,6 +13,8 @@ export \
   SQLITE_LIBS="-L../wasix-deps/lib -lsqlite3" \
   OPENSSL_CFLAGS="-I../wasix-deps/include/openssl" \
   OPENSSL_LIBS="-L../wasix-deps/lib -lssl -lcrypto" \
+  ICONV_CFLAGS="-I../wasix-deps/include/iconv" \
+  ICONV_LIBS="-L../wasix-deps/lib -liconv -lcharset -licrt" \
   PHP_EXTRA_INCLUDES="" \
   RANLIB=llvm-ranlib \
   AR=llvm-ar \
@@ -23,14 +27,14 @@ export \
   LIBS="-Wl,--shared-memory -Wl,--max-memory=4294967296 -Wl,--import-memory -Wl,--export-dynamic \
     -Wl,--export=__heap_base -Wl,--export=__stack_pointer -Wl,--export=__data_end -Wl,--export=__wasm_init_tls \
     -Wl,--export=__wasm_signal -Wl,--export=__tls_size -Wl,--export=__tls_align -Wl,--export=__tls_base \
-    -lwasi-emulated-mman -flto -g -Wl,-z,stack-size=536870912" \
+    -lwasi-emulated-mman -flto -g -Wl,-z,stack-size=8388608" \
 
 ./buildconf --force
 
 ./configure --enable-fd-setsize=32768 --enable-static --disable-shared --host=wasm32-wasi --target=wasm32-wasi \
-  --enable-opcache --disable-opcache-jit --disable-huge-code-pages --disable-rpath --disable-cgi --with-curl=no --with-zlib \
+  --enable-opcache --disable-opcache-jit --disable-huge-code-pages --disable-rpath --disable-cgi --with-curl --with-zlib \
   --without-openssl --disable-zend-signals --prefix=/Users/arshia/repos/wasmer/php/prefix \
-  --with-valgrind=no --with-pcre-jit=no --without-iconv --disable-huge-code-pages --disable-phpdbg \
+  --with-valgrind=no --with-pcre-jit=no --with-iconv --disable-huge-code-pages --disable-phpdbg \
   --enable-fiber-asm --program-suffix=".wasm"
 
 make clean
