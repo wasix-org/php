@@ -247,6 +247,9 @@ PHPAPI const char* php_get_temporary_directory(void)
 		free(tmp);
 		return PG(php_sys_temp_dir);
 	}
+#elif defined(__wasi__)
+	PG(php_sys_temp_dir) = estrdup("/tmp");
+	return PG(php_sys_temp_dir);
 #else
 	/* On Unix use the (usual) TMPDIR environment variable. */
 	{
