@@ -33,7 +33,7 @@ export \
 
 ./configure --enable-fd-setsize=32768 --enable-static --disable-shared --host=wasm32-wasi --target=wasm32-wasi \
   --enable-opcache --disable-opcache-jit --disable-huge-code-pages --disable-rpath --disable-cgi --with-curl --with-zlib \
-  --without-openssl --disable-zend-signals --prefix=/Users/arshia/repos/wasmer/php/prefix \
+  --with-openssl --enable-mbstring --disable-mbregex --disable-zend-signals --prefix=/Users/arshia/repos/wasmer/php/prefix \
   --with-valgrind=no --with-pcre-jit=no --with-iconv --disable-huge-code-pages --disable-phpdbg \
   --enable-fiber-asm --program-suffix=".wasm"
 
