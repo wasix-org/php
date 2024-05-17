@@ -730,6 +730,17 @@ static void sapi_cli_server_register_variables(zval *track_vars_array) /* {{{ */
 		zend_string_release_ex(tmp, /* persistent */ false);
 	}
 
+	// Set https protocol to true if x-forwarded-proto == "https"
+	{
+		zval *x_forwarded_proto;
+		if (NULL != (x_forwarded_proto = zend_hash_str_find(&client->request.headers, "x-forwarded-proto", sizeof("x-forwarded-proto")-1))) {
+			if (x_forwarded_proto == "https") {
+				sapi_cli_server_register_known_var_char(track_vars_array,
+					"HTTPS", 5, "1", 1);
+			}
+		}
+	}
+
 	// Convert absolute URIs into relative paths if the host matches
 	{
 		char uri_host_buffer[256];
@@ -750,21 +761,8 @@ static void sapi_cli_server_register_variables(zval *track_vars_array) /* {{{ */
 			}
 			else
 			{
-				// Try to trim https://HOST
-				snprintf(uri_host_buffer, sizeof(uri_host_buffer), "https://%s", Z_STRVAL_P(host));
-				uri_host_str_len = strlen(uri_host_buffer);
-				if (strncmp(request_uri, uri_host_buffer, uri_host_str_len) == 0) {
-					// Adjust pointer to trim the start
-					const char *new_request_uri = request_uri + uri_host_str_len;
-					sapi_cli_server_register_known_var_char(track_vars_array,
-						"REQUEST_URI", strlen("REQUEST_URI"), new_request_uri, request_uri_len - uri_host_str_len);
-					sapi_cli_server_register_known_var_char(track_vars_array,
-						"HTTPS", 5, "1", 1);
-				}
-				else {
-					sapi_cli_server_register_known_var_str(track_vars_array,
-						"REQUEST_URI", strlen("REQUEST_URI"), client->request.request_uri);				
-				}
+				sapi_cli_server_register_known_var_str(track_vars_array,
+					"REQUEST_URI", strlen("REQUEST_URI"), client->request.request_uri);				
 			}
 		}
 		else {
