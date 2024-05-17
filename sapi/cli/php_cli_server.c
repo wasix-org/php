@@ -2192,6 +2192,10 @@ static zend_result php_cli_server_begin_send_static(php_cli_server *server, php_
 			smart_str_append_ex(&buffer, dt, 1);
 			smart_str_appends_ex(&buffer, " GMT\r\n", 1);
 			zend_string_release_ex(dt, 0);
+
+			if (file_info.st_mtime.tv_sec > 0) {
+				smart_str_appends_ex(&buffer, "Cache-Control: public, max-age=31536000\r\n", 1);
+			}
 		}
 
 		if (mime_type) {
