@@ -734,29 +734,36 @@ static void sapi_cli_server_register_variables(zval *track_vars_array) /* {{{ */
 	{
 		char http_uri_host[256];
 		const char *request_uri = ZSTR_VAL(client->request.request_uri);
-		// Try to trim http://HOST
-		snprintf(http_uri_host, sizeof(http_uri_host), "http://%s", ZSTR_VAL(client->server->host));
-		if (strncmp(request_uri, http_uri_host, strlen(http_uri_host)) == 0) {
-			// Adjust pointer to trim the start
-			char *new_request_uri = request_uri + strlen(http_uri_host);
-			sapi_cli_server_register_known_var_str(track_vars_array,
-				"REQUEST_URI", strlen("REQUEST_URI"), new_request_uri);
-		} else {
-			// Try to trim https://HOST
-			char https_uri_host[256];
-			snprintf(https_uri_host, sizeof(https_uri_host), "https://%s", ZSTR_VAL(client->server->host));
-			if (strncmp(request_uri, https_uri_host, strlen(https_uri_host)) == 0) {
+		zval *host;
+		if (NULL != (host = zend_hash_str_find(&client->request.headers, "host", sizeof("host")-1))) {
+			// Try to trim http://HOST
+			snprintf(http_uri_host, sizeof(http_uri_host), "http://%s", Z_STRVAL_P(host));
+			if (strncmp(request_uri, http_uri_host, strlen(http_uri_host)) == 0) {
 				// Adjust pointer to trim the start
-				char *new_request_uri = request_uri + strlen(https_uri_host);
+				char *new_request_uri = request_uri + strlen(http_uri_host);
 				sapi_cli_server_register_known_var_str(track_vars_array,
 					"REQUEST_URI", strlen("REQUEST_URI"), new_request_uri);
-				sapi_cli_server_register_known_var_str(track_vars_array,
-					"HTTPS", strlen("HTTPS"), "1");
+			} else {
+				// Try to trim https://HOST
+				char https_uri_host[256];
+				snprintf(https_uri_host, sizeof(https_uri_host), "https://%s", Z_STRVAL_P(host));
+				if (strncmp(request_uri, https_uri_host, strlen(https_uri_host)) == 0) {
+					// Adjust pointer to trim the start
+					char *new_request_uri = request_uri + strlen(https_uri_host);
+					sapi_cli_server_register_known_var_str(track_vars_array,
+						"REQUEST_URI", strlen("REQUEST_URI"), new_request_uri);
+					sapi_cli_server_register_known_var_str(track_vars_array,
+						"HTTPS", strlen("HTTPS"), "1");
+				}
+				else {
+					sapi_cli_server_register_known_var_str(track_vars_array,
+						"REQUEST_URI", strlen("REQUEST_URI"), client->request.request_uri);				
+				}
 			}
-			else {
-				sapi_cli_server_register_known_var_str(track_vars_array,
-					"REQUEST_URI", strlen("REQUEST_URI"), client->request.request_uri);				
-			}
+		}
+		else {
+			sapi_cli_server_register_known_var_str(track_vars_array,
+				"REQUEST_URI", strlen("REQUEST_URI"), client->request.request_uri);				
 		}
 	}
 
