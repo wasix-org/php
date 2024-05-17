@@ -737,8 +737,7 @@ static void sapi_cli_server_register_variables(zval *track_vars_array) /* {{{ */
 			NULL != (x_forwarded_proto = zend_hash_str_find(
 						 &client->request.headers,
 						 "x-forwarded-proto",
-						 sizeof("x-forwarded-proto"))) &&
-			Z_TYPE(*x_forwarded_proto) == IS_STRING)
+						 sizeof("x-forwarded-proto")-1))
 		{
 			if (strncmp(Z_STRVAL_P(x_forwarded_proto), "https", strlen("https")) == 0)
 			{
