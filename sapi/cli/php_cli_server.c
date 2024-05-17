@@ -732,28 +732,34 @@ static void sapi_cli_server_register_variables(zval *track_vars_array) /* {{{ */
 
 	// Convert absolute URIs into relative paths if the host matches
 	{
-		char http_uri_host[256];
+		char uri_host_buffer[256];
+		size_t uri_host_str_len = 0;
+		size_t request_uri_len = ZSTR_LEN(client->request.request_uri);
 		const char *request_uri = ZSTR_VAL(client->request.request_uri);
 		zval *host;
 		if (NULL != (host = zend_hash_str_find(&client->request.headers, "host", sizeof("host")-1))) {
 			// Try to trim http://HOST
-			snprintf(http_uri_host, sizeof(http_uri_host), "http://%s", Z_STRVAL_P(host));
-			if (strncmp(request_uri, http_uri_host, strlen(http_uri_host)) == 0) {
+			snprintf(uri_host_buffer, sizeof(uri_host_buffer), "http://%s", Z_STRVAL_P(host));
+			uri_host_str_len = strlen(uri_host_buffer);
+			if (strncmp(request_uri, uri_host_buffer, uri_host_str_len) == 0)
+			{
 				// Adjust pointer to trim the start
-				char *new_request_uri = request_uri + strlen(http_uri_host);
-				sapi_cli_server_register_known_var_str(track_vars_array,
-					"REQUEST_URI", strlen("REQUEST_URI"), new_request_uri);
-			} else {
+				const char *new_request_uri = request_uri + uri_host_str_len;
+				sapi_cli_server_register_known_var_char(track_vars_array,
+					"REQUEST_URI", strlen("REQUEST_URI"), new_request_uri, request_uri_len - uri_host_str_len);
+			}
+			else
+			{
 				// Try to trim https://HOST
-				char https_uri_host[256];
-				snprintf(https_uri_host, sizeof(https_uri_host), "https://%s", Z_STRVAL_P(host));
-				if (strncmp(request_uri, https_uri_host, strlen(https_uri_host)) == 0) {
+				snprintf(uri_host_buffer, sizeof(uri_host_buffer), "https://%s", Z_STRVAL_P(host));
+				uri_host_str_len = strlen(uri_host_buffer);
+				if (strncmp(request_uri, uri_host_buffer, uri_host_str_len) == 0) {
 					// Adjust pointer to trim the start
-					char *new_request_uri = request_uri + strlen(https_uri_host);
-					sapi_cli_server_register_known_var_str(track_vars_array,
-						"REQUEST_URI", strlen("REQUEST_URI"), new_request_uri);
-					sapi_cli_server_register_known_var_str(track_vars_array,
-						"HTTPS", strlen("HTTPS"), "1");
+					const char *new_request_uri = request_uri + uri_host_str_len;
+					sapi_cli_server_register_known_var_char(track_vars_array,
+						"REQUEST_URI", strlen("REQUEST_URI"), new_request_uri, request_uri_len - uri_host_str_len);
+					sapi_cli_server_register_known_var_char(track_vars_array,
+						"HTTPS", 5, "1", 1);
 				}
 				else {
 					sapi_cli_server_register_known_var_str(track_vars_array,
@@ -2220,15 +2226,15 @@ static zend_result php_cli_server_begin_send_static(php_cli_server *server, php_
 		append_essential_headers(&buffer, client, 1, NULL);
 
 		// Append Last-Modified
-		struct stat file_info;
-		if (fstat(fd, &file_info) != -1) {
-			zend_string *dt = php_format_date("D, d M Y H:i:s", sizeof("D, d M Y H:i:s") - 1, file_info.st_mtime.tv_sec, 0);
+		zend_stat_t file_info;
+		if (zend_fstat(fd, &file_info) != -1) {
+			zend_string *dt = php_format_date("D, d M Y H:i:s", sizeof("D, d M Y H:i:s") - 1, file_info.st_mtime, 0);
 			smart_str_appends_ex(&buffer, "Last-Modified: ", 1);
 			smart_str_append_ex(&buffer, dt, 1);
 			smart_str_appends_ex(&buffer, " GMT\r\n", 1);
 			zend_string_release_ex(dt, 0);
 
-			if (file_info.st_mtime.tv_sec > 0) {
+			if (file_info.st_mtime > 0) {
 				smart_str_appends_ex(&buffer, "Cache-Control: public, max-age=31536000\r\n", 1);
 			}
 		}
