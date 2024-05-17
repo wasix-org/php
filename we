@@ -6,6 +6,7 @@ set -eou
   --singlepass \
   --net \
   --mapdir /app:../wordpress-wasmer-starter \
+  --mapdir /openssl:../wasix-deps/openssl \
   -- \
   -S localhost:8080 \
   -t /app/app

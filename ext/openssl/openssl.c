@@ -1227,7 +1227,7 @@ static const EVP_CIPHER * php_openssl_get_evp_cipher_from_algo(zend_long algo) {
 /* {{{ INI Settings */
 PHP_INI_BEGIN()
 	PHP_INI_ENTRY("openssl.cafile", NULL, PHP_INI_PERDIR, NULL)
-	PHP_INI_ENTRY("openssl.capath", NULL, PHP_INI_PERDIR, NULL)
+	PHP_INI_ENTRY("openssl.capath", "/openssl/ssl/certs", PHP_INI_PERDIR, NULL)
 PHP_INI_END()
 /* }}} */
 
