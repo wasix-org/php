@@ -730,8 +730,36 @@ static void sapi_cli_server_register_variables(zval *track_vars_array) /* {{{ */
 		zend_string_release_ex(tmp, /* persistent */ false);
 	}
 
-	sapi_cli_server_register_known_var_str(track_vars_array,
-		"REQUEST_URI", strlen("REQUEST_URI"), client->request.request_uri);
+	// Convert absolute URIs into relative paths if the host matches
+	{
+		char http_uri_host[256];
+		const char *request_uri = ZSTR_VAL(client->request.request_uri);
+		// Try to trim http://HOST
+		snprintf(http_uri_host, sizeof(http_uri_host), "http://%s", ZSTR_VAL(client->server->host));
+		if (strncmp(request_uri, http_uri_host, strlen(http_uri_host)) == 0) {
+			// Adjust pointer to trim the start
+			char *new_request_uri = request_uri + strlen(http_uri_host);
+			sapi_cli_server_register_known_var_str(track_vars_array,
+				"REQUEST_URI", strlen("REQUEST_URI"), new_request_uri);
+		} else {
+			// Try to trim https://HOST
+			char https_uri_host[256];
+			snprintf(https_uri_host, sizeof(https_uri_host), "https://%s", ZSTR_VAL(client->server->host));
+			if (strncmp(request_uri, https_uri_host, strlen(https_uri_host)) == 0) {
+				// Adjust pointer to trim the start
+				char *new_request_uri = request_uri + strlen(https_uri_host);
+				sapi_cli_server_register_known_var_str(track_vars_array,
+					"REQUEST_URI", strlen("REQUEST_URI"), new_request_uri);
+				sapi_cli_server_register_known_var_str(track_vars_array,
+					"HTTPS", strlen("HTTPS"), "1");
+			}
+			else {
+				sapi_cli_server_register_known_var_str(track_vars_array,
+					"REQUEST_URI", strlen("REQUEST_URI"), client->request.request_uri);				
+			}
+		}
+	}
+
 	sapi_cli_server_register_known_var_char(track_vars_array,
 		"REQUEST_METHOD", strlen("REQUEST_METHOD"),
 		SG(request_info).request_method, strlen(SG(request_info).request_method));
