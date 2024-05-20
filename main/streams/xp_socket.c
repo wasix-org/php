@@ -201,13 +201,6 @@ static ssize_t php_sockop_read(php_stream *stream, char *buf, size_t count)
 	}
 
 	ssize_t nr_bytes = recv(sock->socket, buf, XP_SOCK_BUF_SIZE(count), recv_flags);
-	{
-		char *buffer = (char *)malloc(nr_bytes + 1);
-		memcpy(buffer, buf, nr_bytes);
-		buffer[nr_bytes] = '\0';
-		printf("recv %d: %s\n", nr_bytes, buffer);
-		free(buffer);
-	}
 	int err = php_socket_errno();
 
 	if (nr_bytes < 0) {
@@ -340,7 +333,6 @@ static inline int sock_recvfrom(php_netstream_data_t *sock, char *buf, size_t bu
 			}
 		}
 	} else {
-					printf("2\n");
 		ret = recv(sock->socket, buf, XP_SOCK_BUF_SIZE(buflen), flags);
 		ret = (ret == SOCK_CONN_ERR) ? -1 : ret;
 	}
@@ -394,7 +386,6 @@ static int php_sockop_set_option(php_stream *stream, int option, int value, void
 					ssize_t ret;
 #endif
 
-					printf("1\n");
 					ret = recv(sock->socket, &buf, sizeof(buf), MSG_PEEK | MSG_DONTWAIT);
 					err = php_socket_errno();
 					if (0 == ret || /* the counterpart did properly shutdown*/
