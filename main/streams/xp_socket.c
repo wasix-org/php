@@ -59,6 +59,7 @@ static ssize_t php_sockop_write(php_stream *stream, const char *buf, size_t coun
 	php_netstream_data_t *sock = (php_netstream_data_t*)stream->abstract;
 	ssize_t didwrite;
 	struct timeval *ptimeout;
+	int send_flags;
 
 	if (!sock || sock->socket == -1) {
 		return 0;
@@ -70,7 +71,12 @@ static ssize_t php_sockop_write(php_stream *stream, const char *buf, size_t coun
 		ptimeout = &sock->timeout;
 
 retry:
-	didwrite = send(sock->socket, buf, XP_SOCK_BUF_SIZE(count), (sock->is_blocked && ptimeout) ? MSG_DONTWAIT : 0);
+#ifdef __wasi__
+	send_flags = 0;
+#else
+	send_flags = (sock->is_blocked && ptimeout) ? MSG_DONTWAIT : 0;
+#endif
+	didwrite = send(sock->socket, buf, XP_SOCK_BUF_SIZE(count), send_flags);
 
 	if (didwrite <= 0) {
 		char *estr;
@@ -174,21 +180,34 @@ static ssize_t php_sockop_read(php_stream *stream, char *buf, size_t count)
 				(sock->timeout.tv_sec == 0 && sock->timeout.tv_usec == 0);
 		/* Set MSG_DONTWAIT if no wait is needed or there is unlimited timeout which was
 		 * added by fix for #41984 commited in 9343c5404. */
+#ifdef __wasi__
 		if (dont_wait || sock->timeout.tv_sec != -1) {
 			recv_flags = MSG_DONTWAIT;
 		}
+#endif
 		/* If the wait is needed or it is a platform without MSG_DONTWAIT support (e.g. Windows),
 		 * then poll for data. */
+#ifdef __wasi__
 		if (!dont_wait || MSG_DONTWAIT == 0) {
+#endif
 			php_sock_stream_wait_for_data(stream, sock, has_buffered_data);
 			if (sock->timeout_event) {
 				/* It is ok to timeout if there is any data buffered so return 0, otherwise -1. */
 				return has_buffered_data ? 0 : -1;
 			}
+#ifdef __wasi__
 		}
+#endif
 	}
 
 	ssize_t nr_bytes = recv(sock->socket, buf, XP_SOCK_BUF_SIZE(count), recv_flags);
+	{
+		char *buffer = (char *)malloc(nr_bytes + 1);
+		memcpy(buffer, buf, nr_bytes);
+		buffer[nr_bytes] = '\0';
+		printf("recv %d: %s\n", nr_bytes, buffer);
+		free(buffer);
+	}
 	int err = php_socket_errno();
 
 	if (nr_bytes < 0) {
@@ -321,6 +340,7 @@ static inline int sock_recvfrom(php_netstream_data_t *sock, char *buf, size_t bu
 			}
 		}
 	} else {
+					printf("2\n");
 		ret = recv(sock->socket, buf, XP_SOCK_BUF_SIZE(buflen), flags);
 		ret = (ret == SOCK_CONN_ERR) ? -1 : ret;
 	}
@@ -375,7 +395,8 @@ static int php_sockop_set_option(php_stream *stream, int option, int value, void
 #endif
 					int err;
 
-					ret = recv(sock->socket, &buf, sizeof(buf), MSG_PEEK|MSG_DONTWAIT);
+					printf("1\n");
+					ret = recv(sock->socket, &buf, sizeof(buf), MSG_PEEK | MSG_DONTWAIT);
 					err = php_socket_errno();
 					if (0 == ret || /* the counterpart did properly shutdown*/
 						(0 > ret && err != EWOULDBLOCK && err != EAGAIN && err != EMSGSIZE)) { /* there was an unrecoverable error */
