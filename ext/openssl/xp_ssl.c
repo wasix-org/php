@@ -2500,8 +2500,10 @@ static int php_openssl_sockop_set_option(php_stream *stream, int option, int val
 									alive = 0;
 							}
 						}
+#ifndef __wasi__
 					} else if (0 == recv(sslsock->s.socket, &buf, sizeof(buf), MSG_PEEK|MSG_DONTWAIT) && php_socket_errno() != EAGAIN) {
 						alive = 0;
+#endif
 					}
 				}
 				return alive ? PHP_STREAM_OPTION_RETURN_OK : PHP_STREAM_OPTION_RETURN_ERR;
