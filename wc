@@ -2,25 +2,28 @@
 
 set -eou
 
+SYSROOT="/Users/syrusakbary/Development/wasix-libc/sysroot"
+PHP_WASIX_DEPS="./php-wasix-deps"
+
 export \
-  CURL_CFLAGS="-I../wasix-deps/include/curl" \
-  CURL_LIBS="-L../wasix-deps/lib -lcurl -lcrypto -lssl" \
-  ZLIB_CFLAGS="-I../wasix-deps/include/zlib" \
-  ZLIB_LIBS="-L../wasix-deps/lib -lz" \
-  LIBXML_CFLAGS="-I../wasix-deps/include/libxml2" \
-  LIBXML_LIBS="-L../wasix-deps/lib -lxml2 -llzma" \
-  SQLITE_CFLAGS="-I../wasix-deps/include/sqlite" \
-  SQLITE_LIBS="-L../wasix-deps/lib -lsqlite3" \
-  OPENSSL_CFLAGS="-I../wasix-deps/include/openssl" \
-  OPENSSL_LIBS="-L../wasix-deps/lib -lssl -lcrypto" \
-  ICONV_CFLAGS="-I../wasix-deps/include/iconv" \
-  ICONV_LIBS="-L../wasix-deps/lib -liconv -lcharset -licrt" \
+  CURL_CFLAGS="-I$PHP_WASIX_DEPS/include/curl" \
+  CURL_LIBS="-L$PHP_WASIX_DEPS/lib -lcurl -lcrypto -lssl" \
+  ZLIB_CFLAGS="-I$PHP_WASIX_DEPS/include/zlib" \
+  ZLIB_LIBS="-L$PHP_WASIX_DEPS/lib -lz" \
+  LIBXML_CFLAGS="-I$PHP_WASIX_DEPS/include/libxml2" \
+  LIBXML_LIBS="-L$PHP_WASIX_DEPS/lib -lxml2 -llzma" \
+  SQLITE_CFLAGS="-I$PHP_WASIX_DEPS/include/sqlite" \
+  SQLITE_LIBS="-L$PHP_WASIX_DEPS/lib -lsqlite3" \
+  OPENSSL_CFLAGS="-I$PHP_WASIX_DEPS/include/openssl" \
+  OPENSSL_LIBS="-L$PHP_WASIX_DEPS/lib -lssl -lcrypto" \
+  ICONV_CFLAGS="-I$PHP_WASIX_DEPS/include/iconv" \
+  ICONV_LIBS="-L$PHP_WASIX_DEPS/lib -liconv -lcharset -licrt" \
   PHP_EXTRA_INCLUDES="" \
   RANLIB=llvm-ranlib \
   AR=llvm-ar \
   NM=llvm-nm \
-  CC="clang-15 --target=wasm32-wasi --sysroot=/home/arshia/repos/wasmer/wasix-libc/sysroot" \
-  CXX="clang-15 --target=wasm32-wasi --sysroot=/home/arshia/repos/wasmer/wasix-libc/sysroot" \
+  CC="clang-16 --target=wasm32-wasi --sysroot=$SYSROOT" \
+  CXX="clang-16 --target=wasm32-wasi --sysroot=$SYSROOT" \
   CFLAGS="-matomics -mbulk-memory -mmutable-globals -pthread -mthread-model posix -ftls-model=local-exec \
     -fno-trapping-math -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS \
     -g -flto -O2" \
