@@ -3,7 +3,7 @@
 set -eou
 
 SYSROOT="/Users/syrusakbary/Development/wasix-libc/sysroot"
-PHP_WASIX_DEPS="./php-wasix-deps"
+PHP_WASIX_DEPS="../php-wasix-deps"
 
 export \
   CURL_CFLAGS="-I$PHP_WASIX_DEPS/include/curl" \
@@ -18,6 +18,7 @@ export \
   OPENSSL_LIBS="-L$PHP_WASIX_DEPS/lib -lssl -lcrypto" \
   ICONV_CFLAGS="-I$PHP_WASIX_DEPS/include/iconv" \
   ICONV_LIBS="-L$PHP_WASIX_DEPS/lib -liconv -lcharset -licrt" \
+  PHP_BUILD_SYSTEM="clang(WASIX)" \
   PHP_EXTRA_INCLUDES="" \
   RANLIB=llvm-ranlib \
   AR=llvm-ar \
@@ -35,8 +36,8 @@ export \
 ./buildconf --force
 
 ./configure --enable-fd-setsize=32768 --enable-static --disable-shared --host=wasm32-wasi --target=wasm32-wasi \
-  --enable-opcache --disable-opcache-jit --disable-huge-code-pages --disable-rpath --disable-cgi --with-curl --with-zlib \
-  --with-openssl --enable-mbstring --disable-mbregex --disable-zend-signals --prefix=/Users/arshia/repos/wasmer/php/prefix \
+  --enable-opcache --disable-opcache-jit --disable-huge-code-pages --disable-rpath --disable-cgi --with-zlib \
+  --with-openssl --enable-mbstring --disable-mbregex --disable-zend-signals --prefix=/usr/bin \
   --with-valgrind=no --with-pcre-jit=no --with-iconv --disable-huge-code-pages --disable-phpdbg \
   --enable-fiber-asm --program-suffix=".wasm"
 
