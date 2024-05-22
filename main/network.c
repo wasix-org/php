@@ -316,7 +316,10 @@ PHPAPI int php_network_connect_socket(php_socket_t sockfd,
 	socklen_t len;
 	int ret = 0;
 
+	// WASIX only supports blocking connects for now
+#ifndef __wasi__
 	SET_SOCKET_BLOCKING_MODE(sockfd, orig_flags);
+#endif
 
 	if ((n = connect(sockfd, addr, addrlen)) != 0) {
 		error = php_socket_errno();
@@ -371,10 +374,17 @@ PHPAPI int php_network_connect_socket(php_socket_t sockfd,
 	}
 
 ok:
+#ifdef __wasi__
+	if (asynchronous) {
+		// Switch to non-blocking mode after we're connected
+		SET_SOCKET_BLOCKING_MODE(sockfd, orig_flags);
+	}
+#else
 	if (!asynchronous) {
 		/* back to blocking mode */
 		RESTORE_SOCKET_BLOCKING_MODE(sockfd, orig_flags);
 	}
+#endif
 
 	if (error_code) {
 		*error_code = error;
