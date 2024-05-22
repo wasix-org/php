@@ -46,7 +46,7 @@
 #if HAVE_SYS_PARAM_H
 # include <sys/param.h>
 # if (__FreeBSD__ && __FreeBSD_version > 1200000) || (__DragonFly__ && __DragonFly_version >= 500700) || \
-     defined(__sun) || (defined(__NetBSD__) && __NetBSD_Version__ >= 1000000000)
+     defined(__sun) || (defined(__NetBSD__) && __NetBSD_Version__ >= 1000000000) || defined(__wasi__)
 #  include <sys/random.h>
 # endif
 #endif
