@@ -17,4 +17,4 @@ name = 'php'
 module = 'php'
 
 [fs]
-"/openssl" = "./php-wasix-deps/openssl"
+"/openssl" = "../php-wasix-deps/openssl"
