@@ -20,6 +20,7 @@ export \
   ICONV_LIBS="-L$PHP_WASIX_DEPS/lib -liconv -lcharset -licrt" \
   PHP_BUILD_SYSTEM="clang(WASIX)" \
   PHP_EXTRA_INCLUDES="" \
+  PHP_IPV6="yes" \
   RANLIB=llvm-ranlib \
   AR=llvm-ar \
   NM=llvm-nm \
