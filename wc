@@ -16,6 +16,7 @@ export \
   ICONV_CFLAGS="-I../wasix-deps/include/iconv" \
   ICONV_LIBS="-L../wasix-deps/lib -liconv -lcharset -licrt" \
   PHP_EXTRA_INCLUDES="" \
+  PHP_IPV6="yes" \
   RANLIB=llvm-ranlib \
   AR=llvm-ar \
   NM=llvm-nm \
