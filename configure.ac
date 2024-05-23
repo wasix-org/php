@@ -709,6 +709,9 @@ int main(void) {
       *linux*)
         ac_cv_func_getaddrinfo=yes
         ;;
+      *wasm*)
+        ac_cv_func_getaddrinfo=yes
+        ;;
       *)
         ac_cv_func_getaddrinfo=no
         ;;
