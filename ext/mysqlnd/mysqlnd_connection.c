@@ -521,6 +521,13 @@ MYSQLND_METHOD(mysqlnd_conn_data, get_scheme)(MYSQLND_CONN_DATA * conn, MYSQLND_
 	DBG_ENTER("mysqlnd_conn_data::get_scheme");
 #ifndef PHP_WIN32
 	if (hostname.l == sizeof("localhost") - 1 && !strncasecmp(hostname.s, "localhost", hostname.l)) {
+#ifdef __wasi__
+		// No unix socket support in WASIX, use 127.0.0.1 instead
+		if (!port) {
+			port = 3306;
+		}
+		transport.l = mnd_sprintf(&transport.s, 0, "tcp://127.0.0.1:%u", port);
+#else
 		DBG_INF_FMT("socket=%s", socket_or_pipe->s? socket_or_pipe->s:"n/a");
 		if (!socket_or_pipe->s) {
 			socket_or_pipe->s = "/tmp/mysql.sock";
@@ -528,6 +535,7 @@ MYSQLND_METHOD(mysqlnd_conn_data, get_scheme)(MYSQLND_CONN_DATA * conn, MYSQLND_
 		}
 		transport.l = mnd_sprintf(&transport.s, 0, "unix://%s", socket_or_pipe->s);
 		*unix_socket = TRUE;
+#endif
 #else
 	if (hostname.l == sizeof(".") - 1 && hostname.s[0] == '.') {
 		/* named pipe in socket */
