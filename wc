@@ -32,7 +32,7 @@ export \
   LIBS="-Wl,--shared-memory -Wl,--max-memory=4294967296 -Wl,--import-memory -Wl,--export-dynamic \
     -Wl,--export=__heap_base -Wl,--export=__stack_pointer -Wl,--export=__data_end -Wl,--export=__wasm_init_tls \
     -Wl,--export=__wasm_signal -Wl,--export=__tls_size -Wl,--export=__tls_align -Wl,--export=__tls_base \
-    -lwasi-emulated-mman -flto -g -Wl,-z,stack-size=8388608" \
+    -lwasi-emulated-mman -flto -g -Wl,-z,stack-size=8388608 -Wl,--error-limit=0" \
 
 ./buildconf --force
 
@@ -40,7 +40,9 @@ export \
   --enable-opcache --disable-opcache-jit --disable-huge-code-pages --disable-rpath --disable-cgi --with-zlib \
   --with-openssl --enable-mbstring --disable-mbregex --disable-zend-signals --prefix=/usr/bin \
   --with-valgrind=no --with-pcre-jit=no --with-iconv --disable-huge-code-pages --disable-phpdbg \
-  --enable-fiber-asm --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --program-suffix=".wasm"
+  --enable-fiber-asm --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd \
+  --with-pgsql=$PHP_WASIX_DEPS/pgsql --with-pdo-pgsql=$PHP_WASIX_DEPS/pgsql \
+  --program-suffix=".wasm"
 
 make clean
 
