@@ -441,8 +441,3 @@ typedef intptr_t zend_intptr_t;
 typedef uintptr_t zend_uintptr_t;
 
 #endif
-
-#undef __FD_SETSIZE
-#define __FD_SETSIZE 32768
-#undef FD_SETSIZE
-#define FD_SETSIZE 32768
