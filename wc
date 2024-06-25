@@ -36,7 +36,7 @@ export \
 
 ./buildconf --force
 
-./configure --enable-fd-setsize=32768 --enable-static --disable-shared --host=wasm32-wasi --target=wasm32-wasi \
+./configure --enable-fd-setsize=8192 --enable-static --disable-shared --host=wasm32-wasi --target=wasm32-wasi \
   --enable-opcache --disable-opcache-jit --disable-huge-code-pages --disable-rpath --disable-cgi --with-zlib \
   --with-openssl --enable-mbstring --disable-mbregex --disable-zend-signals --prefix=/usr/bin \
   --with-valgrind=no --with-pcre-jit=no --with-iconv --disable-huge-code-pages --disable-phpdbg \
