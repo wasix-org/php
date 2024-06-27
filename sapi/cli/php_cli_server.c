@@ -747,36 +747,6 @@ static void sapi_cli_server_register_variables(zval *track_vars_array) /* {{{ */
 		}
 	}
 
-	// Convert absolute URIs into relative paths if the host matches
-	{
-		char uri_host_buffer[256];
-		size_t uri_host_str_len = 0;
-		size_t request_uri_len = ZSTR_LEN(client->request.request_uri);
-		const char *request_uri = ZSTR_VAL(client->request.request_uri);
-		zval *host;
-		if (NULL != (host = zend_hash_str_find(&client->request.headers, "host", sizeof("host")-1))) {
-			// Try to trim http://HOST
-			snprintf(uri_host_buffer, sizeof(uri_host_buffer), "http://%s", Z_STRVAL_P(host));
-			uri_host_str_len = strlen(uri_host_buffer);
-			if (strncmp(request_uri, uri_host_buffer, uri_host_str_len) == 0)
-			{
-				// Adjust pointer to trim the start
-				const char *new_request_uri = request_uri + uri_host_str_len;
-				sapi_cli_server_register_known_var_char(track_vars_array,
-					"REQUEST_URI", strlen("REQUEST_URI"), new_request_uri, request_uri_len - uri_host_str_len);
-			}
-			else
-			{
-				sapi_cli_server_register_known_var_str(track_vars_array,
-					"REQUEST_URI", strlen("REQUEST_URI"), client->request.request_uri);				
-			}
-		}
-		else {
-			sapi_cli_server_register_known_var_str(track_vars_array,
-				"REQUEST_URI", strlen("REQUEST_URI"), client->request.request_uri);				
-		}
-	}
-
 	sapi_cli_server_register_known_var_char(track_vars_array,
 		"REQUEST_METHOD", strlen("REQUEST_METHOD"),
 		SG(request_info).request_method, strlen(SG(request_info).request_method));
