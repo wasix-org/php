@@ -241,7 +241,7 @@ static inline zend_result build_mime_structure_from_hash(php_curl *ch, zval *zpo
 
 /* {{{ PHP_INI_BEGIN */
 PHP_INI_BEGIN()
-	PHP_INI_ENTRY("curl.cainfo", "", PHP_INI_SYSTEM, NULL)
+	PHP_INI_ENTRY("curl.cainfo", "/openssl/cacert.pem", PHP_INI_SYSTEM, NULL)
 PHP_INI_END()
 /* }}} */
 
