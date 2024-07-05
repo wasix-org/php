@@ -61,4 +61,4 @@ export \
 
 make clean
 
-./wb
+./wasix-build.sh
