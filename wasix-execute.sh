@@ -2,7 +2,7 @@
 
 set -eou
 
-~/repos/wasmer/wasmer/target/release/wasmer run php.wasm \
+~/repos/wasmer/wasmer/target/release/wasmer run sapi/cli/php.wasm \
   --singlepass \
   --net \
   --mapdir /app:../wordpress-wasmer-starter \
