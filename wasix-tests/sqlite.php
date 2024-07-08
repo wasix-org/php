@@ -21,6 +21,7 @@ function test_sqlite_db_pdo()
         $table[$row['id']] = $row['txt'];
     }
 
+    assert(count($table) == 2);
     assert($table[1] == 'foo');
     assert($table[2] == 'bar');
 }
@@ -45,4 +46,6 @@ function test_sqlite_db()
     $row = $result->fetchArray(SQLITE3_ASSOC);
     assert($row['id'] == 2);
     assert($row['txt'] == 'bar');
+
+    assert(!$result->fetchArray(SQLITE3_ASSOC));
 }
