@@ -2,7 +2,7 @@
 
 set -eou
 
-SYSROOT="/home/arshia/repos/wasmer/wasix-libc/sysroot"
+SYSROOT=${$SYSROOT:-"/home/arshia/repos/wasmer/wasix-libc/sysroot"}
 PHP_WASIX_DEPS="../php-wasix-deps"
 
 export \
