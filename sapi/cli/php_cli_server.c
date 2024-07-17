@@ -747,6 +747,8 @@ static void sapi_cli_server_register_variables(zval *track_vars_array) /* {{{ */
 		}
 	}
 
+	sapi_cli_server_register_known_var_str(track_vars_array,
+		"REQUEST_URI", strlen("REQUEST_URI"), client->request.request_uri);
 	sapi_cli_server_register_known_var_char(track_vars_array,
 		"REQUEST_METHOD", strlen("REQUEST_METHOD"),
 		SG(request_info).request_method, strlen(SG(request_info).request_method));
