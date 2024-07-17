@@ -29,6 +29,7 @@ export \
   FREETYPE2_LIBS="-lfreetype" \
   WEBP_CFLAGS="-I$PHP_WASIX_DEPS/include/webp" \
   WEBP_LIBS="-lwebp -lsharpyuv" \
+  WASIX_SENDMAIL_LIBS="-lwasix_sendmail" \
   PHP_BUILD_SYSTEM="clang(WASIX)" \
   PHP_EXTRA_INCLUDES="" \
   PHP_IPV6="yes" \

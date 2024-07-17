@@ -370,6 +370,12 @@ static int php_mail_detect_multiple_crlf(const char *hdr) {
 	return 0;
 }
 
+// The Rust source for this function is in https://github.com/wasix-org/php-wasix-sendmail
+// As for why the code is in rust, well, because it's much easier to have it there than in C.
+#ifdef __wasi__
+int wasix_sendmail(const char *host, uint16_t port, const char* username, const char* password, char **error_message,
+				   const char *headers, const char *subject, const char *mail_from, const char *mail_to, const char *data);
+#endif
 
 /* {{{ php_mail */
 PHPAPI int php_mail(const char *to, const char *subject, const char *message, const char *headers, const char *extra_cmd)
@@ -377,6 +383,9 @@ PHPAPI int php_mail(const char *to, const char *subject, const char *message, co
 #ifdef PHP_WIN32
 	int tsm_err;
 	char *tsm_errmsg = NULL;
+#endif
+#ifdef __wasi__
+	char *wasi_errmsg = NULL;
 #endif
 	FILE *sendmail;
 	int ret;
@@ -452,6 +461,21 @@ PHPAPI int php_mail(const char *to, const char *subject, const char *message, co
 		php_error_docref(NULL, E_WARNING, "Multiple or malformed newlines found in additional_header");
 		MAIL_RET(0);
 	}
+
+#ifdef __wasi__
+	if (wasix_sendmail(INI_STR("SMTP"), !INI_INT("smtp_port") ? 25 : INI_INT("smtp_port"),
+			INI_STR("sendmail_username"), INI_STR("sendmail_password"), &wasi_errmsg, hdr,
+			subject, INI_STR("sendmail_from"), to, message) == FAILURE)
+	{
+		if (wasi_errmsg) {
+			php_error(E_WARNING, "%s", wasi_errmsg);
+			// Error strings live in static data section of libwasix-sendmail.a, no need to free
+		}
+		MAIL_RET(0);
+	} else {
+		MAIL_RET(1);
+	}
+#endif
 
 	if (!sendmail_path) {
 #ifdef PHP_WIN32
