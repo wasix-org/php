@@ -444,6 +444,13 @@ else
 fi
 
 dnl
+dnl Include libwasix_sendmail when building to WASIX
+dnl
+if test "$ac_cv_have_decl___wasi__" == "yes" -a -n "$WASIX_SENDMAIL_LIBS"; then
+  PHP_EVAL_LIBLINE($WASIX_SENDMAIL_LIBS)
+fi
+
+dnl
 dnl Setup extension sources
 dnl
 PHP_NEW_EXTENSION(standard, array.c base64.c basic_functions.c browscap.c crc32.c crypt.c \
