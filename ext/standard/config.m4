@@ -384,6 +384,13 @@ AS_VAR_IF([php_cv_func_getifaddrs], [yes],
     [Define to 1 if you have the 'getifaddrs' function.])])
 
 dnl
+dnl Include libwasix_sendmail when building to WASIX
+dnl
+if test "$ac_cv_have_decl___wasi__" == "yes" -a -n "$WASIX_SENDMAIL_LIBS"; then
+  PHP_EVAL_LIBLINE($WASIX_SENDMAIL_LIBS)
+fi
+
+dnl
 dnl Setup extension sources
 dnl
 PHP_NEW_EXTENSION([standard], m4_normalize([
