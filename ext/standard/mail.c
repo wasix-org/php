@@ -463,9 +463,57 @@ PHPAPI int php_mail(const char *to, const char *subject, const char *message, co
 	}
 
 #ifdef __wasi__
-	if (wasix_sendmail(INI_STR("SMTP"), !INI_INT("smtp_port") ? 25 : INI_INT("smtp_port"),
-			INI_STR("sendmail_username"), INI_STR("sendmail_password"), &wasi_errmsg, hdr,
-			subject, INI_STR("sendmail_from"), to, message) == FAILURE)
+	char* sendmail_from = !INI_STR("sendmail_from") ? "xxx" : INI_STR("sendmail_from");
+
+	if (Z_TYPE(PG(http_globals)[TRACK_VARS_SERVER]) == IS_ARRAY || zend_is_auto_global(ZSTR_KNOWN(ZEND_STR_AUTOGLOBAL_SERVER)))
+	{
+		zval *server_array, *host;
+    	server_array = &PG(http_globals)[TRACK_VARS_SERVER];
+
+        host = zend_hash_str_find(Z_ARRVAL_P(server_array), "HTTP_HOST", sizeof("HTTP_HOST") - 1);
+        if (host) {
+            if (Z_TYPE_P(host) == IS_STRING) {
+				char* host_str = Z_STRVAL_P(host);
+				char* postfix = "@wasmeredgemail.com";
+				
+				// if the string has this format:
+				// 			
+				//		host:port
+				//
+				// only copy the host part. if not, copy the whole string
+				size_t host_len = strchr(host_str, ':') ? strchr(host_str, ':') - host_str : strlen(host_str);
+    			size_t new_str_len = host_len + strlen(postfix) + 1;
+
+				char *new_str = malloc(new_str_len);
+				if (new_str == NULL) {
+					fprintf(stderr, "Memory allocation failed\n");
+					MAIL_RET(1);
+				}
+
+				strncpy(new_str, host_str, host_len);
+    			strcpy(new_str + host_len, postfix);
+
+				sendmail_from = new_str;
+            }
+        }
+	}
+
+	char* smtp = !INI_STR("SMTP") ? "smtp.mailgun.org" : INI_STR("SMTP");
+	int smtp_port = !INI_INT("smtp_port") ? 587 : INI_INT("smtp_port");
+	char* username = !INI_STR("sendmail_username") ? "xxx": INI_STR("sendmail_username");
+	char* password =  !INI_STR("sendmail_password") ? "xxx": INI_STR("sendmail_password");
+
+	if (username == "xxx" && password == "xxx") {
+		smtp = "smtp.mailgun.org";
+		smtp_port = 587;
+	}
+
+	if (wasix_sendmail(
+		smtp, 
+		smtp_port,
+		username, 
+		password, 
+		&wasi_errmsg, hdr, subject, sendmail_from, to, message) == FAILURE)
 	{
 		if (wasi_errmsg) {
 			php_error(E_WARNING, "%s", wasi_errmsg);
