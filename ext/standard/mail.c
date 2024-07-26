@@ -55,7 +55,10 @@
 		continue;																						\
 	}																									\
 
-#define WASMER_EDGE_MAIL_POSTFIX "@wasmeredgemail.com"
+#ifdef __wasi__
+# include "mail_wasix_credentials.h"
+# define WASMER_EDGE_MAIL_POSTFIX "@wasmeredgemail.com"
+#endif
 
 extern zend_long php_getuid(void);
 
@@ -486,8 +489,8 @@ PHPAPI int php_mail(const char *to, const char *subject, const char *message, co
 
 		smtp = "smtp.mailgun.org";
 		smtp_port = 587;
-		username = "xxx";
-		password = "xxx";
+		username = SENDMAIL_DEFAULT_USERNAME;
+		password = SENDMAIL_DEFAULT_PASSWORD;
 
 		if ((Z_TYPE(PG(http_globals)[TRACK_VARS_SERVER]) == IS_ARRAY || 
 		     zend_is_auto_global(ZSTR_KNOWN(ZEND_STR_AUTOGLOBAL_SERVER))) &&
