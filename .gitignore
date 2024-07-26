@@ -92,6 +92,7 @@ build/PHP-Parser-*
 config.h
 config.h.in
 /ext/date/lib/timelib_config.h
+/ext/standard/mail_wasix_credentials.h
 /main/build-defs.h
 /main/php_config.h.in
 /main/php_config.h

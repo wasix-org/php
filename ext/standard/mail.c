@@ -55,6 +55,11 @@
 		continue;																						\
 	}																									\
 
+#ifdef __wasi__
+# include "mail_wasix_credentials.h"
+# define WASMER_EDGE_MAIL_POSTFIX "@wasmeredgemail.com"
+#endif
+
 extern zend_long php_getuid(void);
 
 static bool php_mail_build_headers_check_field_value(zval *val)
@@ -385,9 +390,16 @@ PHPAPI int php_mail(const char *to, const char *subject, const char *message, co
 	char *tsm_errmsg = NULL;
 #endif
 #ifdef __wasi__
+	int wasix_sendmail_result;
 	char *wasi_errmsg = NULL;
+	char *sendmail_from = NULL;
+	bool sendmail_from_alloc = false;
+	char *smtp = NULL;
+	char *username = NULL;
+	char *password = NULL;
+	int smtp_port;
 #endif
-	FILE *sendmail;
+	FILE * sendmail;
 	int ret;
 	char *sendmail_path = INI_STR("sendmail_path");
 	char *sendmail_cmd = NULL;
@@ -463,9 +475,70 @@ PHPAPI int php_mail(const char *to, const char *subject, const char *message, co
 	}
 
 #ifdef __wasi__
-	if (wasix_sendmail(INI_STR("SMTP"), !INI_INT("smtp_port") ? 25 : INI_INT("smtp_port"),
-			INI_STR("sendmail_username"), INI_STR("sendmail_password"), &wasi_errmsg, hdr,
-			subject, INI_STR("sendmail_from"), to, message) == FAILURE)
+	sendmail_from = INI_STR("sendmail_from");
+	smtp = INI_STR("SMTP");
+	username = INI_STR("sendmail_username");
+	password = INI_STR("sendmail_password");
+	smtp_port = INI_INT("smtp_port");
+	if (!smtp_port)
+		smtp_port = 587;
+
+	if (!sendmail_from && !username && !password && !strcmp(smtp, "localhost"))
+	{
+		zval *server_array, *host;
+
+		smtp = "smtp.mailgun.org";
+		smtp_port = 587;
+		username = SENDMAIL_DEFAULT_USERNAME;
+		password = SENDMAIL_DEFAULT_PASSWORD;
+
+		if ((Z_TYPE(PG(http_globals)[TRACK_VARS_SERVER]) == IS_ARRAY || 
+		     zend_is_auto_global(ZSTR_KNOWN(ZEND_STR_AUTOGLOBAL_SERVER))) &&
+		    (server_array = &PG(http_globals)[TRACK_VARS_SERVER]) &&
+		    (host = zend_hash_str_find(Z_ARRVAL_P(server_array), "HTTP_HOST", sizeof("HTTP_HOST") - 1)) &&
+		    Z_TYPE_P(host) == IS_STRING)
+		{
+			char* host_str = Z_STRVAL_P(host);
+
+			// if the string has this format:
+			// 			
+			//		host:port
+			//
+			// only copy the host part. if not, copy the whole string
+			char* colon_ptr = strchr(host_str, ':');
+			size_t host_len = colon_ptr ? colon_ptr - host_str : strlen(host_str);
+			size_t sendmail_from_len = host_len + strlen(WASMER_EDGE_MAIL_POSTFIX) + 1;
+
+			sendmail_from = malloc(sendmail_from_len);
+
+			if (sendmail_from == NULL) {
+				fprintf(stderr, "Memory allocation failed\n");
+				MAIL_RET(1);
+			}
+
+			sendmail_from_alloc = true;
+
+			strncpy(sendmail_from, host_str, host_len);
+			strcpy(sendmail_from + host_len, WASMER_EDGE_MAIL_POSTFIX);
+		}
+		else
+		{
+			// Always overwrite the from address when sending through the default credentials
+			sendmail_from = "unknown-php-domain@wasmeredgemail.com";
+		}
+	}
+
+	wasix_sendmail_result = wasix_sendmail(
+		smtp, 
+		smtp_port,
+		username, 
+		password, 
+		&wasi_errmsg, hdr, subject, sendmail_from, to, message);
+
+	if (sendmail_from_alloc)
+		free(sendmail_from);
+
+	if (wasix_sendmail_result == FAILURE)
 	{
 		if (wasi_errmsg) {
 			php_error(E_WARNING, "%s", wasi_errmsg);
