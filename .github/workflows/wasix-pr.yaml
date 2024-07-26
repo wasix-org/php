@@ -70,6 +70,9 @@ jobs:
           tar xzf wasix-libc.tar.gz
 
       - name: Build
+        env:
+          SENDMAIL_DEFAULT_USERNAME: ${{ secrets.SENDMAIL_DEFAULT_USERNAME }}
+          SENDMAIL_DEFAULT_PASSWORD: ${{ secrets.SENDMAIL_DEFAULT_PASSWORD }}
         run: |
           export SYSROOT=$(pwd)/sysroot/wasix-libc/sysroot32
           export PHP_WASIX_DEPS=$(pwd)/php-wasix-deps
