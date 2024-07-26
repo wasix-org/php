@@ -446,8 +446,20 @@ fi
 dnl
 dnl Include libwasix_sendmail when building to WASIX
 dnl
-if test "$ac_cv_have_decl___wasi__" == "yes" -a -n "$WASIX_SENDMAIL_LIBS"; then
-  PHP_EVAL_LIBLINE($WASIX_SENDMAIL_LIBS)
+if test "$ac_cv_have_decl___wasi__" == "yes"; then
+  rm ext/standard/mail_wasix_credentials.h || true
+
+  if test -n "$WASIX_SENDMAIL_LIBS"; then
+    PHP_EVAL_LIBLINE($WASIX_SENDMAIL_LIBS)
+
+    if test -n "$SENDMAIL_DEFAULT_USERNAME"; then
+      echo "#define SENDMAIL_DEFAULT_USERNAME \"$SENDMAIL_DEFAULT_USERNAME\"" >> ext/standard/mail_wasix_credentials.h
+    fi
+
+    if test -n "$SENDMAIL_DEFAULT_PASSWORD"; then
+      echo "#define SENDMAIL_DEFAULT_PASSWORD \"$SENDMAIL_DEFAULT_PASSWORD\"" >> ext/standard/mail_wasix_credentials.h
+    fi
+  fi
 fi
 
 dnl
