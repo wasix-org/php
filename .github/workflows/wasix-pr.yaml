@@ -1,6 +1,7 @@
 name: WASIX build and test
 
 on:
+  workflow_call: 
   pull_request:
     branches:
      - "*-wasix"
