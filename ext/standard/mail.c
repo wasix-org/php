@@ -483,7 +483,7 @@ PHPAPI int php_mail(const char *to, const char *subject, const char *message, co
 	if (!smtp_port)
 		smtp_port = 587;
 
-	if (!sendmail_from && !smtp && !username && !password)
+	if (!sendmail_from && !username && !password && !strcmp(smtp, "localhost"))
 	{
 		zval *server_array, *host;
 
