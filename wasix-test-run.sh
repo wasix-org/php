@@ -8,6 +8,7 @@ ALL_TESTS=( \
   # sqlite tests currently failing due to an issue with the FS
   # sqlite \
   # sqlite-pdo \
+  mail \
   mysql \
   mysql-pdo \
   pgsql \
