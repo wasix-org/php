@@ -2,6 +2,7 @@
 
 require ("./curl.php");
 require ("./gd.php");
+require ("./mail.php");
 require ("./mysql.php");
 require ("./pgsql.php");
 require ("./sqlite.php");
@@ -34,6 +35,9 @@ switch ($_GET["test"]) {
         break;
     case "gd":
         test_gd();
+        break;
+    case "mail":
+        test_mail();
         break;
     default:
         echo "Unknown test\n";
