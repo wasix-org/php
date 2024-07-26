@@ -54,6 +54,6 @@ jobs:
           mkdir -p sapi/cli
           mv ../build-artifacts/php-wasix/php.wasm sapi/cli/php.wasm
 
-          wasmer publish --registry="wasmer.io" --token=${{ secrets.WAPM_PROD_TOKEN }} --non-interactive
+          wasmer publish --registry="wasmer.io" --token=${{ secrets.WASMER_CIUSER_PROD_TOKEN }} --non-interactive
 
           echo PHP version $VERSION_NUMBER was published successfully 🎉
