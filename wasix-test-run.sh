@@ -5,9 +5,8 @@ set -u
 TEST_SERVER=${TEST_SERVER:-localhost:8080}
 
 ALL_TESTS=( \
-  # sqlite tests currently failing due to an issue with the FS
-  # sqlite \
-  # sqlite-pdo \
+  sqlite \
+  sqlite-pdo \
   mail \
   mysql \
   mysql-pdo \
