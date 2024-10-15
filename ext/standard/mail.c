@@ -55,7 +55,6 @@
 	}																									\
 
 #ifdef __wasi__
-# include "mail_wasix_credentials.h"
 # define WASMER_EDGE_MAIL_POSTFIX "@wasmeredgemail.com"
 #endif
 
@@ -446,6 +445,11 @@ int wasix_sendmail(const char *host, uint16_t port, const char* username, const 
 				   const char *headers, const char *subject, const char *mail_from, const char *mail_to, const char *data);
 #endif
 
+#ifdef __wasi__
+const char *username_env_var = "APP_MAIL_USERNAME";
+const char *password_env_var = "APP_MAIL_PASSWORD";
+#endif
+
 /* {{{ php_mail */
 PHPAPI bool php_mail(const char *to, const char *subject, const char *message, const char *headers, const char *extra_cmd)
 {
@@ -553,8 +557,8 @@ PHPAPI bool php_mail(const char *to, const char *subject, const char *message, c
 
 		smtp = "smtp.mailgun.org";
 		smtp_port = 587;
-		username = SENDMAIL_DEFAULT_USERNAME;
-		password = SENDMAIL_DEFAULT_PASSWORD;
+		username = getenv(username_env_var);
+		password = getenv(password_env_var);
 
 		if ((Z_TYPE(PG(http_globals)[TRACK_VARS_SERVER]) == IS_ARRAY || 
 		     zend_is_auto_global(ZSTR_KNOWN(ZEND_STR_AUTOGLOBAL_SERVER))) &&
@@ -590,6 +594,11 @@ PHPAPI bool php_mail(const char *to, const char *subject, const char *message, c
 			// Always overwrite the from address when sending through the default credentials
 			sendmail_from = "unknown-php-domain@wasmeredgemail.com";
 		}
+	}
+
+	if (!username || !password) {
+		fprintf(stderr, "Username or password for mail is not provided\n");
+		MAIL_RET(1);
 	}
 
 	wasix_sendmail_result = wasix_sendmail(
