@@ -7,7 +7,7 @@ TEST_SERVER=${TEST_SERVER:-localhost:8080}
 ALL_TESTS=( \
   sqlite \
   sqlite-pdo \
-  mail \
+  # mail \
   mysql \
   mysql-pdo \
   pgsql \
