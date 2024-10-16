@@ -382,10 +382,10 @@ int wasix_sendmail(const char *host, uint16_t port, const char* username, const 
 #endif
 
 #ifdef __wasi__
-#define PHP_APP_MAIL_USERNAME "PHP_APP_MAIL_USERNAME"
-#define PHP_APP_MAIL_PASSWORD "PHP_APP_MAIL_PASSWORD"
-#define PHP_APP_MAIL_SMTP "PHP_APP_MAIL_SMTP"
-#define PHP_APP_MAIL_PORT "PHP_APP_MAIL_PORT"
+#define MAIL_SMTP_USERNAME "MAIL_SMTP_USERNAME"
+#define MAIL_SMTP_PASSWORD "MAIL_SMTP_PASSWORD"
+#define MAIL_SMTP_HOST "MAIL_SMTP_HOST"
+#define MAIL_SMTP_PORT "MAIL_SMTP_PORT"
 #endif
 
 /* {{{ php_mail */
@@ -493,15 +493,15 @@ PHPAPI int php_mail(const char *to, const char *subject, const char *message, co
 	{
 		zval *server_array, *host;
 
-		smtp = getenv(PHP_APP_MAIL_SMTP);
+		smtp = getenv(MAIL_SMTP_HOST);
 
-		char* port = getenv(PHP_APP_MAIL_PORT);
+		char* port = getenv(MAIL_SMTP_PORT);
 		if (port) {
 			smtp_port = atoi(port);
 		}
 
-		username = getenv(PHP_APP_MAIL_USERNAME);
-		password = getenv(PHP_APP_MAIL_PASSWORD);
+		username = getenv(MAIL_SMTP_USERNAME);
+		password = getenv(MAIL_SMTP_PASSWORD);
 
 		if ((Z_TYPE(PG(http_globals)[TRACK_VARS_SERVER]) == IS_ARRAY || 
 		     zend_is_auto_global(ZSTR_KNOWN(ZEND_STR_AUTOGLOBAL_SERVER))) &&
