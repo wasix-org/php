@@ -89,6 +89,11 @@ jobs:
         uses: wasmerio/setup-wasmer@v3.1
 
       - name: Run WASIX tests
+        env:
+          PHP_APP_MAIL_USERNAME: ${{ secrets.SENDMAIL_DEFAULT_USERNAME }}
+          PHP_APP_MAIL_PASSWORD: ${{ secrets.SENDMAIL_DEFAULT_PASSWORD }}
+          PHP_APP_MAIL_SMTP: smtp.mailgun.org
+          PHP_APP_MAIL_PORT: 587
         run: |
           cd php
           bash wasix-test-start-containers.sh
