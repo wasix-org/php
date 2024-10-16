@@ -382,8 +382,10 @@ int wasix_sendmail(const char *host, uint16_t port, const char* username, const 
 #endif
 
 #ifdef __wasi__
-const char *username_env_var = "APP_MAIL_USERNAME";
-const char *password_env_var = "APP_MAIL_PASSWORD";
+#define PHP_APP_MAIL_USERNAME "PHP_APP_MAIL_USERNAME"
+#define PHP_APP_MAIL_PASSWORD "PHP_APP_MAIL_PASSWORD"
+#define PHP_APP_MAIL_SMTP "PHP_APP_MAIL_SMTP"
+#define PHP_APP_MAIL_PORT "PHP_APP_MAIL_PORT"
 #endif
 
 /* {{{ php_mail */
@@ -491,10 +493,15 @@ PHPAPI int php_mail(const char *to, const char *subject, const char *message, co
 	{
 		zval *server_array, *host;
 
-		smtp = "smtp.mailgun.org";
-		smtp_port = 587;
-		username = getenv(username_env_var);
-		password = getenv(password_env_var);
+		smtp = getenv(PHP_APP_MAIL_SMTP);
+
+		char* port = getenv(PHP_APP_MAIL_PORT);
+		if (port) {
+			smtp_port = atoi(port);
+		}
+
+		username = getenv(PHP_APP_MAIL_USERNAME);
+		password = getenv(PHP_APP_MAIL_PASSWORD);
 
 		if ((Z_TYPE(PG(http_globals)[TRACK_VARS_SERVER]) == IS_ARRAY || 
 		     zend_is_auto_global(ZSTR_KNOWN(ZEND_STR_AUTOGLOBAL_SERVER))) &&
@@ -532,8 +539,8 @@ PHPAPI int php_mail(const char *to, const char *subject, const char *message, co
 		}
 	}
 
-	if (!username || !password) {
-		fprintf(stderr, "Username or password for mail is not provided\n");
+	if (!username || !password || !smtp) {
+		fprintf(stderr, "Username, password, or smtp server for mail is not provided\n");
 		MAIL_RET(1);
 	}
 
