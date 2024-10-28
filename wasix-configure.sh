@@ -29,6 +29,10 @@ export \
   FREETYPE2_LIBS="-lfreetype" \
   WEBP_CFLAGS="-I$PHP_WASIX_DEPS/include/webp" \
   WEBP_LIBS="-lwebp -lsharpyuv" \
+  LIBZIP_CFLAGS="-I$PHP_WASIX_DEPS/include/libzip" \
+  LIBZIP_LIBS="-lzip" \
+  LIBSODIUM_CFLAGS="-I$PHP_WASIX_DEPS/include/libsodium" \
+  LIBSODIUM_LIBS="-lsodium" \
   WASIX_SENDMAIL_LIBS="-lwasix_sendmail" \
   PHP_BUILD_SYSTEM="clang(WASIX)" \
   PHP_EXTRA_INCLUDES="" \
@@ -56,7 +60,7 @@ export \
   --with-openssl --enable-mbstring --disable-mbregex --disable-zend-signals --prefix=/usr/bin \
   --with-valgrind=no --with-pcre-jit=no --with-iconv --disable-huge-code-pages --disable-phpdbg \
   --enable-bcmath --enable-tidy --enable-gd --with-jpeg --with-freetype --with-webp \
-  --enable-fiber-asm --with-curl --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd \
+  --enable-fiber-asm --with-curl --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-zip --with-sodium \
   --with-pgsql=$PHP_WASIX_DEPS/pgsql --with-pdo-pgsql=$PHP_WASIX_DEPS/pgsql \
   --with-pdo-sqlite --program-suffix=".wasm"
 
