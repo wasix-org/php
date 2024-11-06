@@ -47,7 +47,7 @@ export \
     -g -flto -O2" \
   CXXFLAGS="-matomics -mbulk-memory -mmutable-globals -pthread -mthread-model posix -ftls-model=local-exec \
     -fno-trapping-math -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS \
-    -g -flto -O2" \
+    -g -flto -fno-exceptions -O2" \
   LIBS="-Wl,--shared-memory -Wl,--max-memory=4294967296 -Wl,--import-memory -Wl,--export-dynamic \
     -Wl,--export=__heap_base -Wl,--export=__stack_pointer -Wl,--export=__data_end -Wl,--export=__wasm_init_tls \
     -Wl,--export=__wasm_signal -Wl,--export=__tls_size -Wl,--export=__tls_align -Wl,--export=__tls_base \
@@ -61,7 +61,7 @@ export \
   --with-valgrind=no --with-pcre-jit=no --with-iconv --disable-huge-code-pages --disable-phpdbg \
   --enable-bcmath --enable-tidy --enable-gd --with-jpeg --with-freetype --with-webp \
   --enable-fiber-asm --with-curl --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-zip --with-sodium \
-  --with-pgsql=$PHP_WASIX_DEPS/pgsql --with-pdo-pgsql=$PHP_WASIX_DEPS/pgsql \
+  --with-pgsql=$PHP_WASIX_DEPS/pgsql --with-pdo-pgsql=$PHP_WASIX_DEPS/pgsql --enable-intl \
   --with-pdo-sqlite --program-suffix=".wasm"
 
 make clean
