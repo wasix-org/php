@@ -19,3 +19,4 @@ module = 'php'
 
 [fs]
 "/openssl" = "../php-wasix-deps/openssl"
+"/icu" = "../php-wasix-deps/icu"
