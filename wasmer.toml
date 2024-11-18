@@ -18,5 +18,5 @@ name = 'php'
 module = 'php'
 
 [fs]
-"/openssl" = "../php-wasix-deps/openssl"
+"/etc/ssl" = "../php-wasix-deps/openssl/ssl"
 "/icu" = "../php-wasix-deps/icu"
