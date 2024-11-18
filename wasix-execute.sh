@@ -6,8 +6,8 @@ wasmer run sapi/cli/php.wasm \
   --singlepass \
   --net \
   --mapdir /app:../wordpress-wasmer-starter \
-  --mapdir /openssl:../php-wasix-deps/openssl \
-  --env SSL_CERT_DIR=/openssl/ssl/certs \
+  --mapdir /etc/ssl:../php-wasix-deps/openssl/ssl \
+  --env SSL_CERT_DIR=/etc/ssl/certs \
   -- \
   -S localhost:8080 \
   -t /app/app \
