@@ -211,6 +211,12 @@ static zend_result php_disk_free_space(char *path, double *space) /* {{{ */
 
 	return SUCCESS;
 }
+#elif defined(__wasi__)
+{
+	// Random high number, since WASIX doesn't support retrieving free disk space
+	*space = (double)(1024 * 1024 * 1024);
+	return SUCCESS;
+}
 #else /* {{{ if !defined(WINDOWS) */
 {
 	double bytesfree = 0;
