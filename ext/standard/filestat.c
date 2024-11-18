@@ -230,22 +230,13 @@ static int php_disk_free_space(char *path, double *space) /* {{{ */
 
 	return SUCCESS;
 }
-/* }}} */
-#elif defined(OS2) /* {{{ */
+#elif defined(__wasi__)
 {
-	double bytesfree = 0;
-	FSALLOCATE fsinfo;
-	char drive = path[0] & 95;
-
-	if (DosQueryFSInfo( drive ? drive - 64 : 0, FSIL_ALLOC, &fsinfo, sizeof( fsinfo ) ) == 0) {
-		bytesfree = (double)fsinfo.cbSector * fsinfo.cSectorUnit * fsinfo.cUnitAvail;
-		*space = bytesfree;
-		return SUCCESS;
-	}
-	return FAILURE;
+	// Random high number, since WASIX doesn't support retrieving free disk space
+	*space = (double)(1024 * 1024 * 1024);
+	return SUCCESS;
 }
-/* }}} */
-#else /* {{{ if !defined(OS2) && !defined(WINDOWS) */
+#else /* {{{ if !defined(WINDOWS) */
 {
 	double bytesfree = 0;
 #if defined(HAVE_SYS_STATVFS_H) && defined(HAVE_STATVFS)
