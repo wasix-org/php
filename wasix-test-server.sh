@@ -6,7 +6,7 @@ wasmer run ./sapi/cli/php.wasm \
   --singlepass \
   --net \
   --mapdir /app:./wasix-tests \
-  --mapdir /openssl:../php-wasix-deps/openssl \
+  --mapdir /etc/ssl:../php-wasix-deps/openssl/ssl \
   --env MYSQL_HOST=localhost \
   --env MYSQL_USERNAME=root \
   --env MYSQL_PASSWORD=passwd \
