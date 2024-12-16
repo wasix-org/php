@@ -1,8 +1,12 @@
 #! /usr/bin/env sh
 
-set -eou
+set -eu
 
-SYSROOT=${SYSROOT:-"/home/arshia/repos/wasmer/wasix-libc/sysroot"}
+if [[ -f Makefile ]]; then
+  make clean
+fi
+
+SYSROOT=${SYSROOT:-"/home/arshia/repos/wasmer/wasix-libc/sysroot32"}
 PHP_WASIX_DEPS=${PHP_WASIX_DEPS:-"../php-wasix-deps"}
 
 export \
@@ -33,6 +37,8 @@ export \
   LIBZIP_LIBS="-lzip" \
   LIBSODIUM_CFLAGS="-I$PHP_WASIX_DEPS/include/libsodium" \
   LIBSODIUM_LIBS="-lsodium" \
+  ONIG_CFLAGS="-I$PHP_WASIX_DEPS/include/oniguruma" \
+  ONIG_LIBS="-lonig" \
   WASIX_SENDMAIL_LIBS="-lwasix_sendmail" \
   PHP_BUILD_SYSTEM="clang(WASIX)" \
   PHP_EXTRA_INCLUDES="" \
@@ -57,13 +63,11 @@ export \
 
 ./configure --enable-fd-setsize=8192 --enable-static --disable-shared --host=wasm32-wasi --target=wasm32-wasi \
   --enable-opcache --disable-opcache-jit --disable-huge-code-pages --disable-rpath --disable-cgi --with-zlib \
-  --with-openssl --enable-mbstring --disable-mbregex --disable-zend-signals --prefix=/usr/bin \
+  --with-openssl --enable-mbstring --enable-mbregex --disable-zend-signals --prefix=/usr/bin \
   --with-valgrind=no --with-pcre-jit=no --with-iconv --disable-huge-code-pages --disable-phpdbg \
   --enable-bcmath --enable-tidy --enable-gd --with-jpeg --with-freetype --with-webp \
   --enable-fiber-asm --with-curl --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-zip --with-sodium \
   --with-pgsql=$PHP_WASIX_DEPS/pgsql --with-pdo-pgsql=$PHP_WASIX_DEPS/pgsql --enable-intl \
   --with-pdo-sqlite --program-suffix=".wasm"
-
-make clean
 
 ./wasix-build.sh
