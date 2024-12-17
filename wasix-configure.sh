@@ -68,6 +68,6 @@ export \
   --enable-bcmath --enable-tidy --enable-gd --with-jpeg --with-freetype --with-webp \
   --enable-fiber-asm --with-curl --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-zip --with-sodium \
   --with-pgsql=$PHP_WASIX_DEPS/pgsql --with-pdo-pgsql=$PHP_WASIX_DEPS/pgsql --enable-intl \
-  --with-pdo-sqlite --enable-ftp --program-suffix=".wasm"
+  --with-pdo-sqlite --enable-ftp --enable-igbinary --program-suffix=".wasm"
 
 ./wasix-build.sh
