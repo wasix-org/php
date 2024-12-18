@@ -39,6 +39,8 @@ export \
   LIBSODIUM_LIBS="-lsodium" \
   ONIG_CFLAGS="-I$PHP_WASIX_DEPS/include/oniguruma" \
   ONIG_LIBS="-lonig" \
+  IM_IMAGEMAGICK_CFLAGS="-I$PHP_WASIX_DEPS/include/ImageMagick -DIM_MAGICKWAND_HEADER_STYLE_SEVEN -DMAGICKCORE_QUANTUM_DEPTH=16 -DMAGICKCORE_HDRI_ENABLE=1" \
+  IM_IMAGEMAGICK_LIBS="-lMagickCore-7.Q16HDRI -lMagickWand-7.Q16HDRI" \
   WASIX_SENDMAIL_LIBS="-lwasix_sendmail" \
   PHP_BUILD_SYSTEM="clang(WASIX)" \
   PHP_EXTRA_INCLUDES="" \
@@ -68,6 +70,7 @@ export \
   --enable-bcmath --enable-tidy --enable-gd --enable-exif --with-jpeg --with-freetype --with-webp \
   --enable-fiber-asm --with-curl --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-zip --with-sodium \
   --with-pgsql=$PHP_WASIX_DEPS/pgsql --with-pdo-pgsql=$PHP_WASIX_DEPS/pgsql --enable-intl \
-  --with-pdo-sqlite --enable-ftp --enable-igbinary --program-suffix=".wasm"
+  --with-pdo-sqlite --enable-ftp --enable-igbinary --with-imagick=$PHP_WASIX_DEPS/ImageMagick \
+  --program-suffix=".wasm"
 
 ./wasix-build.sh
