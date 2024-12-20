@@ -7,6 +7,7 @@ wasmer run sapi/cli/php.wasm \
   --net \
   --mapdir /app:../wordpress-wasmer-starter \
   --mapdir /etc/ssl:../php-wasix-deps/openssl/ssl \
+  --mapdir /icu:../php-wasix-deps/icu \
   --env SSL_CERT_DIR=/etc/ssl/certs \
   --env PHP_CLI_SERVER_WORKERS=3 \
   -- \
