@@ -17,5 +17,8 @@ wasmer run sapi/cli/php.wasm \
   -d SMTP=sandbox.smtp.mailtrap.io \
   -d sendmail_from=someone@example.com \
   -d sendmail_username=aaaaaaaaaaaaaa \
-  -d sendmail_password=bbbbbbbbbbbbbb
+  -d sendmail_password=bbbbbbbbbbbbbb \
+  -d upload_max_filesize=128M \
+  -d post_max_size=128M \
+  -d memory_limit=512M
 
