@@ -2,7 +2,7 @@
 
 set -eo
 
-wasmer run sapi/cli/php.wasm \
+wasmer run sapi/cli/php-eh.wasm \
   --singlepass \
   --net \
   --mapdir /app:../wordpress \
@@ -22,4 +22,3 @@ wasmer run sapi/cli/php.wasm \
   -d post_max_size=128M \
   -d max_input_vars=6144 \
   -d memory_limit=512M
-
