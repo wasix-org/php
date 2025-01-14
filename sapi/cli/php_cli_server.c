@@ -2911,6 +2911,10 @@ int do_cli_server(int argc, char **argv) /* {{{ */
 	}
 	sapi_module.phpinfo_as_text = 0;
 
+#ifdef __wasi__
+	wasix_proc_snapshot();
+#endif
+
 	{
 		r = 0;
 		bool ipv6 = strchr(server.host, ':');
