@@ -2819,12 +2819,11 @@ static void php_cli_server_sigint_handler(int sig) /* {{{ */
 }
 /* }}} */
 
-/* Returns status code */
-int do_cli_server(int argc, char **argv) /* {{{ */
+static int do_cli_server_part_1(int argc, char **argv) /* {{{ */
 {
 	char *php_optarg = NULL;
 	int php_optind = 1;
-	int c, r;
+	int c;
 	const char *server_bind_address = NULL;
 	extern const opt_struct OPTIONS[];
 	const char *document_root = NULL;
@@ -2835,99 +2834,133 @@ int do_cli_server(int argc, char **argv) /* {{{ */
 	const char *router = NULL;
 	char document_root_buf[MAXPATHLEN];
 
-	while ((c = php_getopt(argc, argv, OPTIONS, &php_optarg, &php_optind, 0, 2))!=-1) {
-		switch (c) {
-			case 'S':
-				server_bind_address = php_optarg;
-				break;
-			case 't':
-#ifndef PHP_WIN32
-				document_root = php_optarg;
-#else
-				k = strlen(php_optarg);
-				if (k + 1 > MAXPATHLEN) {
-					fprintf(stderr, "Document root path is too long.\n");
-					return 1;
-				}
-				memmove(document_root_tmp, php_optarg, k + 1);
-				/* Clean out any trailing garbage that might have been passed
-					from a batch script. */
-				do {
-					document_root_tmp[k] = '\0';
-					k--;
-				} while ('"' == document_root_tmp[k] || ' ' == document_root_tmp[k]);
-				document_root = document_root_tmp;
-#endif
-				break;
-			case 'q':
-				if (php_cli_server_log_level > 1) {
-					php_cli_server_log_level--;
-				}
-				break;
+	zend_first_try {
+		while ((c = php_getopt(argc, argv, OPTIONS, &php_optarg, &php_optind, 0, 2))!=-1) {
+			switch (c) {
+				case 'S':
+					server_bind_address = php_optarg;
+					break;
+				case 't':
+	#ifndef PHP_WIN32
+					document_root = php_optarg;
+	#else
+					k = strlen(php_optarg);
+					if (k + 1 > MAXPATHLEN) {
+						fprintf(stderr, "Document root path is too long.\n");
+						return 1;
+					}
+					memmove(document_root_tmp, php_optarg, k + 1);
+					/* Clean out any trailing garbage that might have been passed
+						from a batch script. */
+					do {
+						document_root_tmp[k] = '\0';
+						k--;
+					} while ('"' == document_root_tmp[k] || ' ' == document_root_tmp[k]);
+					document_root = document_root_tmp;
+	#endif
+					break;
+				case 'q':
+					if (php_cli_server_log_level > 1) {
+						php_cli_server_log_level--;
+					}
+					break;
+			}
 		}
-	}
 
-	if (document_root) {
-		zend_stat_t sb = {0};
+		if (document_root) {
+			zend_stat_t sb = {0};
 
-		if (php_sys_stat(document_root, &sb)) {
-			fprintf(stderr, "Directory %s does not exist.\n", document_root);
+			if (php_sys_stat(document_root, &sb)) {
+				fprintf(stderr, "Directory %s does not exist.\n", document_root);
+				return 1;
+			}
+			if (!S_ISDIR(sb.st_mode)) {
+				fprintf(stderr, "%s is not a directory.\n", document_root);
+				return 1;
+			}
+			if (VCWD_REALPATH(document_root, document_root_buf)) {
+				document_root = document_root_buf;
+			}
+		} else {
+			char *ret = NULL;
+
+	#if HAVE_GETCWD
+			ret = VCWD_GETCWD(document_root_buf, MAXPATHLEN);
+	#elif HAVE_GETWD
+			ret = VCWD_GETWD(document_root_buf);
+	#endif
+			document_root = ret ? document_root_buf: ".";
+		}
+
+		if (argc > php_optind) {
+			router = argv[php_optind];
+		}
+
+		if (FAILURE == php_cli_server_ctor(&server, server_bind_address, document_root, router)) {
 			return 1;
 		}
-		if (!S_ISDIR(sb.st_mode)) {
-			fprintf(stderr, "%s is not a directory.\n", document_root);
-			return 1;
+		sapi_module.phpinfo_as_text = 0;
+	}
+	zend_end_try();
+
+	return 0;
+} /* }}} */
+
+static int do_cli_server_part_2(void) /* {{{ */
+{
+	int r;
+
+	zend_first_try {
+		{
+			r = 0;
+			bool ipv6 = strchr(server.host, ':');
+			php_cli_server_logf(
+				PHP_CLI_SERVER_LOG_PROCESS,
+				"PHP %s Development Server (http://%s%s%s:%d) started",
+				PHP_VERSION, ipv6 ? "[" : "", server.host,
+				ipv6 ? "]" : "", server.port);
 		}
-		if (VCWD_REALPATH(document_root, document_root_buf)) {
-			document_root = document_root_buf;
+
+	#if defined(SIGINT)
+		signal(SIGINT, php_cli_server_sigint_handler);
+	#endif
+
+	#if defined(SIGPIPE)
+		signal(SIGPIPE, SIG_IGN);
+	#endif
+
+		zend_signal_init();
+
+		if (SUCCESS != php_cli_server_do_event_loop(&server)) {
+			r = 1;
 		}
-	} else {
-		char *ret = NULL;
+		php_cli_server_dtor(&server);
+	} zend_end_try();
+	return r;
+} /* }}} */
 
-#if HAVE_GETCWD
-		ret = VCWD_GETCWD(document_root_buf, MAXPATHLEN);
-#elif HAVE_GETWD
-		ret = VCWD_GETWD(document_root_buf);
-#endif
-		document_root = ret ? document_root_buf: ".";
+/* Returns status code */
+int do_cli_server(int argc, char **argv) /* {{{ */
+{
+	int r;
+	
+	r = do_cli_server_part_1(argc, argv);
+	if (r != 0)
+	{
+		return r;
 	}
 
-	if (argc > php_optind) {
-		router = argv[php_optind];
-	}
-
-	if (FAILURE == php_cli_server_ctor(&server, server_bind_address, document_root, router)) {
-		return 1;
-	}
-	sapi_module.phpinfo_as_text = 0;
-
+	// Note: this function needs to be asyncified to support the process
+	// snapshot below. If we do both parts in one function (as is done in
+	// the upstream PHP source), then this function ends up doing wasm
+	// exception handling, which is currently not supported by wasm-opt.
+	// Thus, we refactor the function into two halfs, with the
+	// wasix_proc_snapshot call in a function that does no exception
+	// handling.
 #ifdef __wasi__
 	wasix_proc_snapshot();
 #endif
 
-	{
-		r = 0;
-		bool ipv6 = strchr(server.host, ':');
-		php_cli_server_logf(
-			PHP_CLI_SERVER_LOG_PROCESS,
-			"PHP %s Development Server (http://%s%s%s:%d) started",
-			PHP_VERSION, ipv6 ? "[" : "", server.host,
-			ipv6 ? "]" : "", server.port);
-	}
-
-#if defined(SIGINT)
-	signal(SIGINT, php_cli_server_sigint_handler);
-#endif
-
-#if defined(SIGPIPE)
-	signal(SIGPIPE, SIG_IGN);
-#endif
-
-	zend_signal_init();
-
-	if (SUCCESS != php_cli_server_do_event_loop(&server)) {
-		r = 1;
-	}
-	php_cli_server_dtor(&server);
+	r = do_cli_server_part_2();
 	return r;
 } /* }}} */
