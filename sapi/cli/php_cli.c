@@ -618,7 +618,7 @@ static int do_cli(int argc, char **argv) /* {{{ */
 
 	file_handle.filename = NULL;
 
-	zend_try {
+	zend_first_try {
 
 		CG(in_compilation) = 0; /* not initialized but needed for several options */
 
@@ -1334,17 +1334,15 @@ exit_loop:
 		CG(compiler_options) |= ZEND_COMPILE_EXTENDED_INFO;
 	}
 
-	zend_first_try {
 #ifndef PHP_CLI_WIN32_NO_CONSOLE
-		if (sapi_module == &cli_sapi_module) {
+	if (sapi_module == &cli_sapi_module) {
 #endif
-			exit_status = do_cli(argc, argv);
+		exit_status = do_cli(argc, argv);
 #ifndef PHP_CLI_WIN32_NO_CONSOLE
-		} else {
-			exit_status = do_cli_server(argc, argv);
-		}
+	} else {
+		exit_status = do_cli_server(argc, argv);
+	}
 #endif
-	} zend_end_try();
 out:
 	if (ini_path_override) {
 		free(ini_path_override);
