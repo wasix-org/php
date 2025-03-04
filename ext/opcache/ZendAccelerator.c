@@ -4709,8 +4709,10 @@ static zend_result accel_finish_startup_preload_subprocess(pid_t *pid)
 
 	if (!ZCG(accel_directives).preload_user
 	 || !*ZCG(accel_directives).preload_user) {
-
 		bool sapi_requires_preload_user = !(strcmp(sapi_module.name, "cli") == 0
+#ifdef __wasi__
+		  || strcmp(sapi_module.name, "cli-server") == 0
+#endif
 		  || strcmp(sapi_module.name, "phpdbg") == 0);
 
 		if (!sapi_requires_preload_user) {
