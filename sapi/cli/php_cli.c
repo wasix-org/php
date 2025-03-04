@@ -1333,6 +1333,16 @@ exit_loop:
 		CG(compiler_options) |= ZEND_COMPILE_EXTENDED_INFO;
 	}
 
+#ifdef __wasi__
+	// Make a process snapshot after the sapi module is initialized. This
+	// should result in faster startup times, since the sapi initialization
+	// logic also takes care of initializing all the extensions.
+
+	// Note: we can't asyncify a function that does exception handling, so
+	// the zend_try call was moved into do_cli_server and do_cli.
+	wasix_proc_snapshot();
+#endif
+
 #ifndef PHP_CLI_WIN32_NO_CONSOLE
 	if (sapi_module == &cli_sapi_module) {
 #endif

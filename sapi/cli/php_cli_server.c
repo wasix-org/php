@@ -2819,11 +2819,12 @@ static void php_cli_server_sigint_handler(int sig) /* {{{ */
 }
 /* }}} */
 
-static int do_cli_server_part_1(int argc, char **argv) /* {{{ */
+/* Returns status code */
+int do_cli_server(int argc, char **argv) /* {{{ */
 {
 	char *php_optarg = NULL;
 	int php_optind = 1;
-	int c;
+	int c, r;
 	const char *server_bind_address = NULL;
 	extern const opt_struct OPTIONS[];
 	const char *document_root = NULL;
@@ -2900,17 +2901,7 @@ static int do_cli_server_part_1(int argc, char **argv) /* {{{ */
 			return 1;
 		}
 		sapi_module.phpinfo_as_text = 0;
-	}
-	zend_end_try();
 
-	return 0;
-} /* }}} */
-
-static int do_cli_server_part_2(void) /* {{{ */
-{
-	int r;
-
-	zend_first_try {
 		{
 			r = 0;
 			bool ipv6 = strchr(server.host, ':');
@@ -2935,32 +2926,6 @@ static int do_cli_server_part_2(void) /* {{{ */
 			r = 1;
 		}
 		php_cli_server_dtor(&server);
-	} zend_end_try();
-	return r;
-} /* }}} */
-
-/* Returns status code */
-int do_cli_server(int argc, char **argv) /* {{{ */
-{
-	int r;
-	
-	r = do_cli_server_part_1(argc, argv);
-	if (r != 0)
-	{
-		return r;
-	}
-
-	// Note: this function needs to be asyncified to support the process
-	// snapshot below. If we do both parts in one function (as is done in
-	// the upstream PHP source), then this function ends up doing wasm
-	// exception handling, which is currently not supported by wasm-opt.
-	// Thus, we refactor the function into two halfs, with the
-	// wasix_proc_snapshot call in a function that does no exception
-	// handling.
-#ifdef __wasi__
-	wasix_proc_snapshot();
-#endif
-
-	r = do_cli_server_part_2();
+	} zend_end_try()
 	return r;
 } /* }}} */
