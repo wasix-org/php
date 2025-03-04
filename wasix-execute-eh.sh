@@ -3,13 +3,15 @@
 set -eo
 
 wasmer run sapi/cli/php-eh.wasm \
-  --singlepass \
+  --llvm \
   --net \
   --mapdir /app:../wordpress \
   --mapdir /etc/ssl:../php-wasix-deps/openssl/ssl \
   --mapdir /icu:../php-wasix-deps/icu \
   --env SSL_CERT_DIR=/etc/ssl/certs \
-  --env PHP_CLI_SERVER_WORKERS=3 \
+  --env OPENSSL_CONF=/etc/ssl/openssl.cnf \
+  --use amin/bash \
+  --forward-host-env \
   -- \
   -S localhost:8080 \
   -t /app \
