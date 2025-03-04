@@ -9,6 +9,8 @@ wasmer run sapi/cli/php.wasm \
   --mapdir /etc/ssl:../php-wasix-deps/openssl/ssl \
   --mapdir /icu:../php-wasix-deps/icu \
   --env SSL_CERT_DIR=/etc/ssl/certs \
+  --use amin/bash \
+  --forward-host-env \
   --env PHP_CLI_SERVER_WORKERS=3 \
   -- \
   -S localhost:8080 \

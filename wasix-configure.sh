@@ -45,11 +45,11 @@ export \
   PHP_BUILD_SYSTEM="clang(WASIX)" \
   PHP_EXTRA_INCLUDES="" \
   PHP_IPV6="yes" \
-  RANLIB=llvm-ranlib-15 \
-  AR=llvm-ar-15 \
-  NM=llvm-nm-15 \
-  CC="clang-15 --target=wasm32-wasi --sysroot=$SYSROOT" \
-  CXX="clang++-15 --target=wasm32-wasi --sysroot=$SYSROOT" \
+  RANLIB=llvm-ranlib-20 \
+  AR=llvm-ar-20 \
+  NM=llvm-nm-20 \
+  CC="clang-20 --target=wasm32-wasi --sysroot=$SYSROOT" \
+  CXX="clang++-20 --target=wasm32-wasi --sysroot=$SYSROOT" \
   CFLAGS="-matomics -mbulk-memory -mmutable-globals -pthread -mthread-model posix -ftls-model=local-exec \
     -fno-trapping-math -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS \
     -g -flto -O2" \
@@ -59,7 +59,8 @@ export \
   LIBS="-Wl,--shared-memory -Wl,--max-memory=4294967296 -Wl,--import-memory -Wl,--export-dynamic \
     -Wl,--export=__heap_base -Wl,--export=__stack_pointer -Wl,--export=__data_end -Wl,--export=__wasm_init_tls \
     -Wl,--export=__wasm_signal -Wl,--export=__tls_size -Wl,--export=__tls_align -Wl,--export=__tls_base \
-    -lwasi-emulated-mman -flto -g -Wl,-z,stack-size=8388608 -Wl,--error-limit=0 -L$PHP_WASIX_DEPS/lib -v"
+    -lwasi-emulated-mman -flto -g -Wl,-z,stack-size=8388608 -Wl,--error-limit=0 -L$PHP_WASIX_DEPS/lib -v \
+    --no-wasm-opt"
 
 ./buildconf --force
 
