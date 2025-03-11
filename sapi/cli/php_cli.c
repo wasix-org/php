@@ -1326,16 +1326,6 @@ exit_loop:
 		CG(compiler_options) |= ZEND_COMPILE_EXTENDED_INFO;
 	}
 
-#ifdef __wasi__
-	// Make a process snapshot after the sapi module is initialized. This
-	// should result in faster startup times, since the sapi initialization
-	// logic also takes care of initializing all the extensions.
-
-	// Note: we can't asyncify a function that does exception handling, so
-	// the zend_try call was moved into do_cli_server and do_cli.
-	wasix_proc_snapshot();
-#endif
-
 #ifndef PHP_CLI_WIN32_NO_CONSOLE
 	if (sapi_module == &cli_sapi_module) {
 #endif
@@ -1343,6 +1333,18 @@ exit_loop:
 #ifndef PHP_CLI_WIN32_NO_CONSOLE
 	} else {
 		exit_status = do_cli_server(argc, argv);
+#ifdef __wasi__
+		// If any instaboot requests were received, we're now in warmup mode. We
+		// want to snapshot the process state, and then start another server to
+		// do the actual request handling.
+		if (exit_status == 0 && wasmer_instaboot_warmup_mode == WASMER_INSTABOOT_WARMUP_MODE_IN_PROGRESS) {
+			// Note: we can't asyncify a function that does exception handling, so
+			// the zend_try call was moved into do_cli_server and do_cli.
+			wasmer_instaboot_warmup_mode = WASMER_INSTABOOT_WARMUP_MODE_DONE;
+			wasix_proc_snapshot();
+			exit_status = do_cli_server(argc, argv);
+		}
+#endif
 	}
 #endif
 out:
