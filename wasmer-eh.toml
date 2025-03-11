@@ -1,6 +1,6 @@
 [package]
 name = 'php/php-eh'
-version = '8.3.404-beta.4'
+version = '8.3.404-beta.6'
 description = 'PHP with wasm exception handling support'
 readme = 'README.md'
 

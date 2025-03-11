@@ -119,6 +119,10 @@ static pid_t	*php_cli_server_workers;
 static zend_long php_cli_server_workers_max;
 #endif
 
+#ifdef __wasi__
+int wasmer_instaboot_warmup_mode = WASMER_INSTABOOT_WARMUP_MODE_NONE;
+#endif
+
 static zend_string* cli_concat_persistent_zstr_with_char(zend_string *old_str, const char *at, size_t length);
 
 typedef struct php_cli_server_poller {
@@ -2334,6 +2338,40 @@ static zend_result php_cli_server_dispatch(php_cli_server *server, php_cli_serve
 	 || !client->request.path_translated) {
 		is_static_file = 1;
 	}
+
+#ifdef __wasi__
+	if (wasmer_instaboot_warmup_mode < WASMER_INSTABOOT_WARMUP_MODE_DONE) {
+		switch (wasmer_instaboot_warmup_mode)
+		{
+			case WASMER_INSTABOOT_WARMUP_MODE_NONE:
+				if (zend_hash_find(&client->request.headers, ZSTR_KNOWN(ZEND_STR_INSTABOOT)) == NULL) {
+					// non-instaboot request; assume we're not warming up and disable these checks
+					wasmer_instaboot_warmup_mode = WASMER_INSTABOOT_WARMUP_MODE_DONE;
+					break;
+				} else {
+					php_cli_server_logf(PHP_CLI_SERVER_LOG_MESSAGE, "Going into instaboot warmup mode");
+					wasmer_instaboot_warmup_mode = WASMER_INSTABOOT_WARMUP_MODE_IN_PROGRESS;
+					// and fall through
+				}
+
+			case WASMER_INSTABOOT_WARMUP_MODE_IN_PROGRESS:
+				if (zend_hash_find(&client->request.headers, ZSTR_KNOWN(ZEND_STR_INSTABOOT)) == NULL) {
+					// Nothing to do here but warn people
+					php_cli_server_logf(PHP_CLI_SERVER_LOG_ERROR, "Non-instaboot request received in instaboot warmup mode");
+				}
+				if (zend_hash_find(&client->request.headers, ZSTR_KNOWN(ZEND_STR_INSTABOOT_SHUTDOWN)) != NULL) {
+					// We stay in IN_PROGRESS mode to let php_cli.c know about the warmup requests. It'll
+					// switch to DONE mode and restart the server after snapshotting.
+					php_cli_server_logf(PHP_CLI_SERVER_LOG_MESSAGE, "Shutting down warmup mode server");
+					server->is_running = 0;
+				}
+				break;
+
+			default:
+				break;
+		}
+	}
+#endif
 
 	if (server->router || !is_static_file) {
 		if (FAILURE == php_cli_server_request_startup(server, client)) {
