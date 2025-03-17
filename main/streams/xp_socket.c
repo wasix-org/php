@@ -161,17 +161,15 @@ static ssize_t php_sockop_read(php_stream *stream, char *buf, size_t count)
 	php_netstream_data_t *sock = (php_netstream_data_t*)stream->abstract;
 	ssize_t nr_bytes = 0;
 	int err;
-
 	if (!sock || sock->socket == -1) {
 		return -1;
 	}
 
+	int recv_flags = 0;
+	/* Special handling for blocking read. */
 	if (sock->is_blocked) {
-		/* Find out if there is any data buffered from the previous read. */
-		bool has_buffered_data = stream->has_buffered_data;
-		/* No need to wait if there is any data buffered or no timeout. */
-		bool dont_wait = has_buffered_data ||
-				(sock->timeout.tv_sec == 0 && sock->timeout.tv_usec == 0);
+		/* No need to wait if there is no timeout. */
+		bool dont_wait = (sock->timeout.tv_sec == 0 && sock->timeout.tv_usec == 0);
 		/* Set MSG_DONTWAIT if no wait is needed or there is unlimited timeout which was
 		 * added by fix for #41984 commited in 9343c5404. */
 #ifdef __wasi__
@@ -184,26 +182,22 @@ static ssize_t php_sockop_read(php_stream *stream, char *buf, size_t count)
 #ifdef __wasi__
 		if (!dont_wait || MSG_DONTWAIT == 0) {
 #endif
-			php_sock_stream_wait_for_data(stream, sock, has_buffered_data);
+			php_sock_stream_wait_for_data(stream, sock);
 			if (sock->timeout_event) {
-				/* It is ok to timeout if there is any data buffered so return 0, otherwise -1. */
-				return has_buffered_data ? 0 : -1;
+				return -1;
 			}
 #ifdef __wasi__
 		}
 #endif
+	} else {
+		/* For non-blocking read, use MSG_DONTWAIT if unlimited timeout. */
+		if (sock->timeout.tv_sec != -1) {
+			recv_flags = MSG_DONTWAIT;
+		}
 	}
 
-	ssize_t nr_bytes = recv(sock->socket, buf, XP_SOCK_BUF_SIZE(count), recv_flags);
-	{
-		char *buffer = (char *)malloc(nr_bytes + 1);
-		memcpy(buffer, buf, nr_bytes);
-		buffer[nr_bytes] = '\0';
-		printf("recv %d: %s\n", nr_bytes, buffer);
-		free(buffer);
-	}
-	int err = php_socket_errno();
-
+	nr_bytes = recv(sock->socket, buf, XP_SOCK_BUF_SIZE(count), recv_flags);
+	err = php_socket_errno();
 	if (nr_bytes < 0) {
 		if (PHP_IS_TRANSIENT_ERROR(err)) {
 			nr_bytes = 0;
@@ -213,14 +207,11 @@ static ssize_t php_sockop_read(php_stream *stream, char *buf, size_t count)
 	} else if (nr_bytes == 0) {
 		stream->eof = 1;
 	}
-
 	if (nr_bytes > 0) {
 		php_stream_notify_progress_increment(PHP_STREAM_CONTEXT(stream), nr_bytes, 0);
 	}
-
 	return nr_bytes;
 }
-
 
 static int php_sockop_close(php_stream *stream, int close_handle)
 {
