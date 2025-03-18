@@ -385,6 +385,7 @@ static int php_sockop_set_option(php_stream *stream, int option, int value, void
 #else
 					ssize_t ret;
 #endif
+					int err;
 
 					ret = recv(sock->socket, &buf, sizeof(buf), MSG_PEEK | MSG_DONTWAIT);
 					err = php_socket_errno();
