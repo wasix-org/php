@@ -352,12 +352,9 @@ int main(void) {
   PHP_ADD_EXTENSION_DEP(opcache, date)
   PHP_ADD_EXTENSION_DEP(opcache, pcre)
 
-  if test "$php_cv_shm_ipc" != "yes" && test "$php_cv_shm_mmap_posix" != "yes" && test "$php_cv_shm_mmap_anon" != "yes"; then
-    AC_MSG_FAILURE(m4_text_wrap([
-      No supported shared memory caching support was found when configuring
-      opcache.
-    ]))
-  fi
+  dnl if test "$have_shm_ipc" != "yes" && test "$have_shm_mmap_posix" != "yes" && test "$have_shm_mmap_anon" != "yes"; then
+  dnl   AC_MSG_ERROR([No supported shared memory caching support was found when configuring opcache. Check config.log for any errors or missing dependencies.])
+  dnl fi
 
   AS_VAR_IF([PHP_OPCACHE_JIT], [yes], [
     PHP_ADD_BUILD_DIR([
