@@ -2849,6 +2849,10 @@ static void *tracked_malloc(size_t size)
 
 	tracked_add(heap, ptr, size);
 	heap->size += size;
+	heap->real_size = size;
+	size_t peak = MAX(heap->peak, size);
+	heap->peak = peak;
+	heap->real_peak = peak;
 	return ptr;
 }
 
@@ -2860,6 +2864,7 @@ static void tracked_free(void *ptr) {
 	zend_mm_heap *heap = AG(mm_heap);
 	zval *size_zv = tracked_get_size_zv(heap, ptr);
 	heap->size -= Z_LVAL_P(size_zv);
+	heap->real_size = heap->size;
 	zend_hash_del_bucket(heap->tracked_allocs, (Bucket *) size_zv);
 	free(ptr);
 }
@@ -2885,6 +2890,10 @@ static void *tracked_realloc(void *ptr, size_t new_size) {
 	ptr = __zend_realloc(ptr, new_size);
 	tracked_add(heap, ptr, new_size);
 	heap->size += new_size - old_size;
+	heap->real_size = heap->size;
+	size_t peak = MAX(heap->peak, heap->size);
+	heap->peak = peak;
+	heap->real_peak = peak;
 	return ptr;
 }
 
@@ -2907,7 +2916,11 @@ static void alloc_globals_ctor(zend_alloc_globals *alloc_globals)
 	tmp = getenv("USE_ZEND_ALLOC");
 	if (tmp && !ZEND_ATOL(tmp)) {
 #endif
+#ifdef __wasi__
+		bool tracked = true;
+#else
 		bool tracked = (tmp = getenv("USE_TRACKED_ALLOC")) && ZEND_ATOL(tmp);
+#endif
 		zend_mm_heap *mm_heap = alloc_globals->mm_heap = malloc(sizeof(zend_mm_heap));
 		memset(mm_heap, 0, sizeof(zend_mm_heap));
 		mm_heap->use_custom_heap = ZEND_MM_CUSTOM_HEAP_STD;
