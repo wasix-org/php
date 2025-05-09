@@ -37,6 +37,14 @@ PHP_RSHUTDOWN_FUNCTION(filestat);
 #define getuid() 1
 #endif
 
+#ifdef __wasi__
+#undef getgid
+#define getgroups(a, b) 0
+#define getgid() 1
+#define getuid() 1
+#define chown(a,b,c) 0
+#endif
+
 /* Compatibility. */
 typedef size_t php_stat_len;
 

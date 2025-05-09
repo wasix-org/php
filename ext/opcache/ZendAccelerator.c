@@ -79,7 +79,11 @@ typedef int gid_t;
 #ifndef ZEND_WIN32
 # include <sys/types.h>
 # include <sys/wait.h>
+
+#ifndef __wasi__
 # include <sys/ipc.h>
+#endif
+
 # include <pwd.h>
 # include <grp.h>
 #endif
@@ -239,7 +243,7 @@ static inline void accel_restart_enter(void)
 {
 #ifdef ZEND_WIN32
 	INCREMENT(restart_in);
-#else
+#elif !defined(__wasi__)
 	struct flock restart_in_progress;
 
 	restart_in_progress.l_type = F_WRLCK;
@@ -259,7 +263,7 @@ static inline void accel_restart_leave(void)
 #ifdef ZEND_WIN32
 	ZCSG(restart_in_progress) = 0;
 	DECREMENT(restart_in);
-#else
+#elif !defined(__wasi__)
 	struct flock restart_finished;
 
 	restart_finished.l_type = F_UNLCK;
@@ -277,7 +281,9 @@ static inline void accel_restart_leave(void)
 static inline int accel_restart_is_active(void)
 {
 	if (ZCSG(restart_in_progress)) {
-#ifndef ZEND_WIN32
+#ifdef ZEND_WIN32
+		return LOCKVAL(restart_in) != 0;
+#elif !defined(__wasi__)
 		struct flock restart_check;
 
 		restart_check.l_type = F_WRLCK;
@@ -295,8 +301,6 @@ static inline int accel_restart_is_active(void)
 		} else {
 			return 1;
 		}
-#else
-		return LOCKVAL(restart_in) != 0;
 #endif
 	}
 	return 0;
@@ -309,7 +313,7 @@ static inline zend_result accel_activate_add(void)
 	SHM_UNPROTECT();
 	INCREMENT(mem_usage);
 	SHM_PROTECT();
-#else
+#elif !defined(__wasi__)
 	struct flock mem_usage_lock;
 
 	mem_usage_lock.l_type = F_RDLCK;
@@ -335,7 +339,7 @@ static inline void accel_deactivate_sub(void)
 		ZCG(counted) = 0;
 		SHM_PROTECT();
 	}
-#else
+#elif !defined(__wasi__)
 	struct flock mem_usage_unlock;
 
 	mem_usage_unlock.l_type = F_UNLCK;
@@ -353,7 +357,7 @@ static inline void accel_unlock_all(void)
 {
 #ifdef ZEND_WIN32
 	accel_deactivate_sub();
-#else
+#elif !defined(__wasi__)
 	if (lock_file == -1) {
 		return;
 	}
@@ -789,7 +793,7 @@ static void accel_use_shm_interned_strings(void)
 	HANDLE_UNBLOCK_INTERRUPTIONS();
 }
 
-#ifndef ZEND_WIN32
+#if !defined(ZEND_WIN32) && !defined(__wasi__)
 static inline void kill_all_lockers(struct flock *mem_usage_check)
 {
 	int success, tries;
@@ -860,7 +864,7 @@ static inline int accel_is_inactive(void)
 	if (LOCKVAL(mem_usage) == 0) {
 		return SUCCESS;
 	}
-#else
+#elif !defined(__wasi__)
 	struct flock mem_usage_check;
 
 	mem_usage_check.l_type = F_WRLCK;
@@ -2937,7 +2941,7 @@ static int zend_accel_init_shm(void)
 	return SUCCESS;
 }
 
-static void accel_globals_ctor(zend_accel_globals *accel_globals)
+void accel_globals_ctor(zend_accel_globals *accel_globals)
 {
 #if defined(COMPILE_DL_OPCACHE) && defined(ZTS)
 	ZEND_TSRMLS_CACHE_UPDATE();
@@ -3111,12 +3115,11 @@ static void accel_move_code_to_huge_pages(void)
 # endif /* defined(MAP_HUGETLB) || defined(MADV_HUGEPAGE) */
 #endif /* HAVE_HUGE_CODE_PAGES */
 
-static int accel_startup(zend_extension *extension)
+int accel_startup(zend_extension *extension)
 {
 #ifdef ZTS
 	accel_globals_id = ts_allocate_id(&accel_globals_id, sizeof(zend_accel_globals), (ts_allocate_ctor) accel_globals_ctor, NULL);
 #else
-	accel_globals_ctor(&accel_globals);
 #endif
 
 #ifdef HAVE_JIT
