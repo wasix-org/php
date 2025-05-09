@@ -167,7 +167,7 @@ file_fsmagic(struct magic_set *ms, const char *fn, zend_stat_t *sb)
 # endif
 #endif
 
-#ifdef	S_IFIFO
+#if	defined(S_IFIFO) && !defined(__wasi__)
 	case S_IFIFO:
 		if((ms->flags & MAGIC_DEVICES) != 0)
 			break;

@@ -211,6 +211,12 @@ static zend_result php_disk_free_space(char *path, double *space) /* {{{ */
 
 	return SUCCESS;
 }
+#elif defined(__wasi__)
+{
+	// Random high number, since WASIX doesn't support retrieving free disk space
+	*space = (double)(1024 * 1024 * 1024);
+	return SUCCESS;
+}
 #else /* {{{ if !defined(PHP_WIN32) */
 {
 	double bytesfree = 0;
@@ -926,7 +932,9 @@ PHPAPI void php_stat(zend_string *filename, int type, zval *return_value)
 			RETURN_STRING("link");
 		}
 		switch(stat_sb->st_mode & S_IFMT) {
+#ifndef __wasi__
 		case S_IFIFO: RETURN_STRING("fifo");
+#endif
 		case S_IFCHR: RETURN_STRING("char");
 		case S_IFDIR: RETURN_STRING("dir");
 		case S_IFBLK: RETURN_STRING("block");

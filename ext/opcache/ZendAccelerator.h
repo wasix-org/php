@@ -104,6 +104,8 @@ typedef unsigned __int64 accel_time_t;
 typedef time_t accel_time_t;
 #endif
 
+extern zend_extension zend_extension_entry;
+
 typedef enum _zend_accel_restart_reason {
 	ACCEL_RESTART_OOM,    /* restart because of out of memory */
 	ACCEL_RESTART_HASH,   /* restart because of hash overflow */
@@ -334,6 +336,8 @@ zend_op_array *persistent_compile_file(zend_file_handle *file_handle, int type);
 zend_string* ZEND_FASTCALL accel_new_interned_string(zend_string *str);
 
 uint32_t zend_accel_get_class_name_map_ptr(zend_string *type_name);
+
+void accel_globals_ctor(zend_accel_globals *accel_globals);
 
 END_EXTERN_C()
 

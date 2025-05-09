@@ -26,8 +26,8 @@ PHP_ARG_WITH([capstone],
   [no])
 
 if test "$PHP_OPCACHE" != "no"; then
-  dnl Always build as shared extension.
-  ext_shared=yes
+  dnl WASIX has no dynamic loading; always build opcache statically.
+  ext_shared=no
 
   AS_VAR_IF([PHP_HUGE_CODE_PAGES], [yes],
     [AC_DEFINE([HAVE_HUGE_CODE_PAGES], [1],
@@ -231,7 +231,7 @@ int main(void) {
 [php_cv_shm_mmap_anon=yes],
 [php_cv_shm_mmap_anon=no],
 [AS_CASE([$host_alias],
-  [*linux*|*midipix], [php_cv_shm_mmap_anon=yes],
+  [*linux*|*midipix|*wasm*], [php_cv_shm_mmap_anon=yes],
   [php_cv_shm_mmap_anon=no])])])
 AS_VAR_IF([php_cv_shm_mmap_anon], [yes],
   [AC_DEFINE([HAVE_SHM_MMAP_ANON], [1],
