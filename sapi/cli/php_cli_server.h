@@ -19,6 +19,13 @@
 
 #include "SAPI.h"
 
+#ifdef __wasi__
+extern int wasmer_instaboot_warmup_mode;
+#define WASMER_INSTABOOT_WARMUP_MODE_NONE 0
+#define WASMER_INSTABOOT_WARMUP_MODE_IN_PROGRESS 1
+#define WASMER_INSTABOOT_WARMUP_MODE_DONE 2
+#endif
+
 extern const zend_function_entry server_additional_functions[];
 extern sapi_module_struct cli_server_sapi_module;
 extern int do_cli_server(int argc, char **argv);

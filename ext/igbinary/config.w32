@@ -1,0 +1,40 @@
+// vim:ft=javascript
+
+ARG_ENABLE("igbinary", "whether to enable igbinary support", "no");
+
+if (PHP_IGBINARY == "yes") {
+  var dll = get_define('PHPDLL');
+  var is_php5 = null != dll.match(/^php5/);
+  // php 8.x also uses src/php7
+  var is_php7_or_newer = !is_php5 && null != dll.match(/^php[78]/)
+
+  if (CHECK_HEADER_ADD_INCLUDE("apc_serializer.h", "CFLAGS_IGBINARY", "..\\pecl\\apcu;ext\\apcu")) {
+    AC_DEFINE('HAVE_APCU_SUPPORT', 1, "Whether to enable apcu support");
+    if (!CHECK_HEADER_ADD_INCLUDE("apc_serializer.h", "CFLAGS_IGBINARY", "ext\\apcu")) {
+      // Workaround to allow configuring and making apcu and igbinary at the same time.
+      // If they aren't available in ext/apcu, expect them in ../pecl/apcu
+      AC_DEFINE('HAVE_APCU_HEADERS_IN_PECL', 1, "Whether or not apcu headers exist only in pecl folder")
+    }
+  }
+  var old_conf_dir = configure_module_dirname;
+  var php_igbinary_src_files;
+  var subdir;
+
+  /* Copied from solr config.w32 */
+  /* XXX tricky job here, override configure_module_dirname, define the basic extension,
+     then set it back*/
+  if (is_php5) {
+    ERROR("PHP 5 is not supported by igbinary 3 - Use igbinary 2.x");
+  } else if (is_php7_or_newer) {
+    subdir = "src\\php7";
+    php_igbinary_src_files = "igbinary.c hash_si.c hash_si_ptr.c"
+  } else {
+    ERROR("Cannot match any known PHP version with '" + dll + "'");
+  }
+  configure_module_dirname = configure_module_dirname + "\\" + subdir;
+  EXTENSION("igbinary", php_igbinary_src_files);
+  configure_module_dirname = old_conf_dir;
+  AC_DEFINE('HAVE_IGBINARY', 1, 'Have igbinary support', false);
+  ADD_EXTENSION_DEP('igbinary', 'session', true);
+  PHP_INSTALL_HEADERS('ext/igbinary', 'igbinary.h php_igbinary.h ' + subdir + '\\igbinary.h ' + subdir + '\\php_igbinary.h');
+}

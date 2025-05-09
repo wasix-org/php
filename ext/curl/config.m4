@@ -11,16 +11,22 @@ if test "$PHP_CURL" != "no"; then
   PHP_EVAL_INCLINE($CURL_CFLAGS)
 
   AC_MSG_CHECKING([for SSL support in libcurl])
-  case "$CURL_FEATURES" in
-    *SSL*)
-      CURL_SSL=yes
-      AC_MSG_RESULT([yes])
-      ;;
-    *)
-      CURL_SSL=no
-      AC_MSG_RESULT([no])
-      ;;
-  esac
+  if test "$ac_cv_have_decl___wasi__" == "yes"; then
+    echo "SSL support always enabled for WASIX"
+    CURL_SSL=yes
+    AC_MSG_RESULT([yes])
+  else
+    case "$CURL_FEATURES" in
+      *SSL*)
+        CURL_SSL=yes
+        AC_MSG_RESULT([yes])
+        ;;
+      *)
+        CURL_SSL=no
+        AC_MSG_RESULT([no])
+        ;;
+    esac
+  fi
 
   if test "$CURL_SSL" = yes; then
     save_LDFLAGS="$LDFLAGS"
