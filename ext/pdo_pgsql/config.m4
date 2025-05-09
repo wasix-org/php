@@ -20,7 +20,7 @@ if test "$PHP_PDO_PGSQL" != "no"; then
     fi
   done
 
-  if test -n "$PG_CONFIG"; then
+  if test "$PHP_PDO_PGSQL" = "yes" -a -n "$PG_CONFIG"; then
     AC_MSG_RESULT([$PG_CONFIG])
     PGSQL_INCLUDE=`$PG_CONFIG --includedir`
     PGSQL_LIBDIR=`$PG_CONFIG --libdir`

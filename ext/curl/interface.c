@@ -447,7 +447,7 @@ ZEND_GET_MODULE (curl)
 
 /* {{{ PHP_INI_BEGIN */
 PHP_INI_BEGIN()
-	PHP_INI_ENTRY("curl.cainfo", "", PHP_INI_SYSTEM, NULL)
+	PHP_INI_ENTRY("curl.cainfo", "/etc/ssl/cacert.pem", PHP_INI_SYSTEM, NULL)
 PHP_INI_END()
 /* }}} */
 

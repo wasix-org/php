@@ -237,6 +237,9 @@ label2:
 fi
 PHP_SUBST(RE2C_FLAGS)
 
+dnl Check if __wasi__ is defined by the compiler
+AC_CHECK_DECLS([__wasi__])
+
 dnl Platform-specific compile settings.
 dnl ----------------------------------------------------------------------------
 
@@ -698,7 +701,17 @@ int main(void) {
   freeaddrinfo(ai);
   return 0;
 }
-  ]])],[ac_cv_func_getaddrinfo=yes], [ac_cv_func_getaddrinfo=no], [ac_cv_func_getaddrinfo=no])],
+  ]])],[ac_cv_func_getaddrinfo=yes], [ac_cv_func_getaddrinfo=no], [
+    dnl Cross compilation.
+    case $host_alias in
+      *wasm*)
+        ac_cv_func_getaddrinfo=yes
+        ;;
+      *)
+        ac_cv_func_getaddrinfo=no
+        ;;
+    esac
+  ])],
 [ac_cv_func_getaddrinfo=no])])
 if test "$ac_cv_func_getaddrinfo" = yes; then
   AC_DEFINE(HAVE_GETADDRINFO,1,[Define if you have the getaddrinfo function])

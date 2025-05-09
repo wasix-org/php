@@ -161,10 +161,12 @@ int zend_shared_alloc_startup(size_t requested_size)
 	smm_shared_globals = &tmp_shared_globals;
 	ZSMMG(shared_free) = requested_size; /* goes to tmp_shared_globals.shared_free */
 
+#ifndef __wasi__
 #ifndef ZEND_WIN32
 	zend_shared_alloc_create_lock(ZCG(accel_directives).lockfile_path);
 #else
 	zend_shared_alloc_create_lock();
+#endif
 #endif
 
 	if (ZCG(accel_directives).memory_model && ZCG(accel_directives).memory_model[0]) {
@@ -441,7 +443,7 @@ void zend_shared_alloc_safe_unlock(void)
 
 void zend_shared_alloc_lock(void)
 {
-#ifndef ZEND_WIN32
+#if !defined(ZEND_WIN32) && !defined(__wasi__)
 	struct flock mem_write_lock;
 
 	mem_write_lock.l_type = F_WRLCK;
@@ -469,8 +471,6 @@ void zend_shared_alloc_lock(void)
 		}
 		break;
 	}
-#else
-	zend_shared_alloc_lock_win32();
 #endif
 
 	ZCG(locked) = 1;
@@ -478,7 +478,7 @@ void zend_shared_alloc_lock(void)
 
 void zend_shared_alloc_unlock(void)
 {
-#ifndef ZEND_WIN32
+#if !defined(ZEND_WIN32) && !defined(__wasi__)
 	struct flock mem_write_unlock;
 
 	mem_write_unlock.l_type = F_UNLCK;
@@ -489,15 +489,15 @@ void zend_shared_alloc_unlock(void)
 
 	ZCG(locked) = 0;
 
-#ifndef ZEND_WIN32
+#ifdef ZEND_WIN32
+	zend_shared_alloc_unlock_win32();
+#elif !defined(__wasi__)
 	if (fcntl(lock_file, F_SETLK, &mem_write_unlock) == -1) {
 		zend_accel_error(ACCEL_LOG_ERROR, "Cannot remove lock - %s (%d)", strerror(errno), errno);
 	}
 #ifdef ZTS
 	tsrm_mutex_unlock(zts_lock);
 #endif
-#else
-	zend_shared_alloc_unlock_win32();
 #endif
 }
 

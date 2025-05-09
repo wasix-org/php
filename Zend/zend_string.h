@@ -514,6 +514,11 @@ EMPTY_SWITCH_DEFAULT_CASE()
 	_(ZEND_STR_ARGV,                   "argv") \
 	_(ZEND_STR_ARGC,                   "argc") \
 	_(ZEND_STR_ARRAY_CAPITALIZED,      "Array") \
+	_(ZEND_STR_AUTOGLOBAL_SERVER,      "_SERVER") \
+	_(ZEND_STR_AUTOGLOBAL_ENV,         "_ENV") \
+	_(ZEND_STR_AUTOGLOBAL_REQUEST,     "_REQUEST") \
+	_(ZEND_STR_INSTABOOT,              "x-edge-instaboot") \
+	_(ZEND_STR_INSTABOOT_SHUTDOWN,     "x-wasmer-instaboot-shutdown") \
 
 
 typedef enum _zend_known_string_id {

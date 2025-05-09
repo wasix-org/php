@@ -457,6 +457,21 @@ static int php_mail_detect_multiple_crlf(char *hdr) {
 	return 0;
 }
 
+// The Rust source for this function is in https://github.com/wasix-org/php-wasix-sendmail
+// As for why the code is in rust, well, because it's much easier to have it there than in C.
+#ifdef __wasi__
+int wasix_sendmail(const char *host, uint16_t port, const char* username, const char* password, char **error_message,
+				   const char *headers, const char *subject, const char *mail_from, const char *mail_to, const char *data);
+#endif
+
+#ifdef __wasi__
+#define NO_REPLY "no-reply@"
+#define MAIL_USERNAME "MAIL_USERNAME"
+#define MAIL_PASSWORD "MAIL_PASSWORD"
+#define MAIL_HOST "MAIL_HOST"
+#define MAIL_PORT "MAIL_PORT"
+#define MAIL_FROM_ADDRESS "MAIL_FROM_ADDRESS"
+#endif
 
 /* {{{ php_mail
  */
@@ -466,7 +481,17 @@ PHPAPI int php_mail(char *to, char *subject, char *message, char *headers, char 
 	int tsm_err;
 	char *tsm_errmsg = NULL;
 #endif
-	FILE *sendmail;
+#ifdef __wasi__
+	int wasix_sendmail_result;
+	char *wasi_errmsg = NULL;
+	char *sendmail_from = NULL;
+	bool sendmail_from_alloc = false;
+	char *smtp = NULL;
+	char *username = NULL;
+	char *password = NULL;
+	int smtp_port;
+#endif
+	FILE * sendmail;
 	int ret;
 	char *sendmail_path = INI_STR("sendmail_path");
 	char *sendmail_cmd = NULL;
@@ -532,6 +557,101 @@ PHPAPI int php_mail(char *to, char *subject, char *message, char *headers, char 
 		php_error_docref(NULL, E_WARNING, "Multiple or malformed newlines found in additional_header");
 		MAIL_RET(0);
 	}
+
+#ifdef __wasi__
+	// Always prioritize the INI settings over the environment variables
+	smtp = INI_STR("SMTP");
+	if (!smtp) {
+		smtp = getenv(MAIL_HOST);
+	}
+
+	username = INI_STR("sendmail_username");
+	if (!username) {
+		username = getenv(MAIL_USERNAME);
+	}
+
+	password = INI_STR("sendmail_password");
+	if (!password) {
+		password = getenv(MAIL_PASSWORD);
+	}
+
+	smtp_port = INI_INT("smtp_port");
+	if (!smtp_port) {
+		char* port = getenv(MAIL_PORT);
+		if (port) {
+			smtp_port = atoi(port);
+		}
+	}
+	if (!smtp_port) {
+		smtp_port = 587; // Default SMTP port
+	}
+
+	sendmail_from = INI_STR("sendmail_from");
+	if (!sendmail_from) {
+		sendmail_from = getenv(MAIL_FROM_ADDRESS);
+	}
+	if (!sendmail_from) {
+		// Construct a from address from the host name
+		zval *server_array, *host;
+
+		if ((Z_TYPE(PG(http_globals)[TRACK_VARS_SERVER]) == IS_ARRAY || 
+		     zend_is_auto_global(ZSTR_KNOWN(ZEND_STR_AUTOGLOBAL_SERVER))) &&
+		    (server_array = &PG(http_globals)[TRACK_VARS_SERVER]) &&
+		    (host = zend_hash_str_find(Z_ARRVAL_P(server_array), "HTTP_HOST", sizeof("HTTP_HOST") - 1)) &&
+		    Z_TYPE_P(host) == IS_STRING)
+		{
+			char* host_str = Z_STRVAL_P(host);
+
+			// if the string has this format:
+			// 			
+			//		host:port
+			//
+			// only copy the host part. if not, copy the whole string
+			char* colon_ptr = strchr(host_str, ':');
+			size_t host_len = colon_ptr ? colon_ptr - host_str : strlen(host_str);
+			size_t sendmail_from_len = strlen(NO_REPLY) + host_len + 1;
+
+			sendmail_from = malloc(sendmail_from_len);
+
+			if (sendmail_from == NULL) {
+				fprintf(stderr, "Memory allocation failed\n");
+				MAIL_RET(0);
+			}
+
+			sendmail_from_alloc = true;
+
+			strcpy(sendmail_from, NO_REPLY);
+			strncpy(sendmail_from + strlen(NO_REPLY), host_str, host_len);
+			sendmail_from[strlen(NO_REPLY) + host_len] = '\0';
+		}
+	}
+
+	if (!username || !password || !smtp || !sendmail_from) {
+		php_error(E_WARNING, "Username, password, or smtp server for mail not provided");
+		MAIL_RET(0);
+	}
+
+	wasix_sendmail_result = wasix_sendmail(
+		smtp, 
+		smtp_port,
+		username, 
+		password, 
+		&wasi_errmsg, hdr, subject, sendmail_from, to, message);
+
+	if (sendmail_from_alloc)
+		free(sendmail_from);
+
+	if (wasix_sendmail_result == FAILURE)
+	{
+		if (wasi_errmsg) {
+			php_error(E_WARNING, "%s", wasi_errmsg);
+			// Error strings live in static data section of libwasix-sendmail.a, no need to free
+		}
+		MAIL_RET(0);
+	} else {
+		MAIL_RET(1);
+	}
+#endif
 
 	if (!sendmail_path) {
 #ifdef PHP_WIN32
