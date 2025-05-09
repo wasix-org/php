@@ -1,0 +1,27 @@
+#! /usr/bin/env sh
+
+set -eo
+
+wasmer run sapi/cli/php.wasm \
+  --singlepass \
+  --net \
+  --mapdir /app:../wordpress \
+  --mapdir /etc/ssl:../php-wasix-deps/openssl/ssl \
+  --mapdir /icu:../php-wasix-deps/icu \
+  --env SSL_CERT_DIR=/etc/ssl/certs \
+  --use amin/bash \
+  --forward-host-env \
+  --env PHP_CLI_SERVER_WORKERS=3 \
+  -- \
+  -S localhost:8080 \
+  -t /app \
+  -d smtp_port=587 \
+  -d SMTP=sandbox.smtp.mailtrap.io \
+  -d sendmail_from=someone@example.com \
+  -d sendmail_username=aaaaaaaaaaaaaa \
+  -d sendmail_password=bbbbbbbbbbbbbb \
+  -d upload_max_filesize=128M \
+  -d post_max_size=128M \
+  -d max_input_vars=6144 \
+  -d memory_limit=512M
+

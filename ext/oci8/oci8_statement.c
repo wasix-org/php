@@ -37,7 +37,7 @@
 #include "php_oci8_int.h"
 
 #if defined(OCI_MAJOR_VERSION) && (OCI_MAJOR_VERSION > 10) && \
-	(defined(__x86_64__) || defined(__LP64__) || defined(_LP64) || defined(_WIN64))
+	(defined(__x86_64__) || defined(__LP64__) || defined(_LP64) || defined(_WIN64) || defined(WASIX_64BIT_LONG_PATCH))
 typedef ub8 oci_phpsized_int;
 #else
 typedef ub4 oci_phpsized_int;

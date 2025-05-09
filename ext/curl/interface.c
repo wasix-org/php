@@ -237,7 +237,7 @@ static inline int build_mime_structure_from_hash(php_curl *ch, zval *zpostfields
 
 /* {{{ PHP_INI_BEGIN */
 PHP_INI_BEGIN()
-	PHP_INI_ENTRY("curl.cainfo", "", PHP_INI_SYSTEM, NULL)
+	PHP_INI_ENTRY("curl.cainfo", "/etc/ssl/cacert.pem", PHP_INI_SYSTEM, NULL)
 PHP_INI_END()
 /* }}} */
 
