@@ -28,7 +28,7 @@ static int last_resource_number;
 
 zend_result zend_load_extension(const char *path)
 {
-#if ZEND_EXTENSIONS_SUPPORT
+#if ZEND_EXTENSIONS_SUPPORT && !defined(__wasi__)
 	DL_HANDLE handle;
 
 	handle = DL_LOAD(path);
@@ -62,7 +62,7 @@ zend_result zend_load_extension(const char *path)
 
 zend_result zend_load_extension_handle(DL_HANDLE handle, const char *path)
 {
-#if ZEND_EXTENSIONS_SUPPORT
+#if ZEND_EXTENSIONS_SUPPORT && !defined(__wasi__)
 	zend_extension *new_extension;
 
 	const zend_extension_version_info *extension_version_info = (const zend_extension_version_info *) DL_FETCH_SYMBOL(handle, "extension_version_info");
@@ -228,7 +228,7 @@ void zend_shutdown_extensions(void)
 
 void zend_extension_dtor(zend_extension *extension)
 {
-#if ZEND_EXTENSIONS_SUPPORT && !ZEND_DEBUG
+#if ZEND_EXTENSIONS_SUPPORT && !ZEND_DEBUG && !defined(__wasi__)
 	if (extension->handle && !getenv("ZEND_DONT_UNLOAD_MODULES")) {
 		DL_UNLOAD(extension->handle);
 	}

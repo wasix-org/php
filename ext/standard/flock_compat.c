@@ -26,7 +26,12 @@ PHPAPI int flock(int fd, int operation)
 #endif /* !defined(HAVE_FLOCK) */
 
 PHPAPI int php_flock(int fd, int operation)
-#ifdef HAVE_STRUCT_FLOCK /* {{{ */
+#if defined(__wasi__)
+{
+	errno = 0;
+	return 0;
+}
+#elif defined(HAVE_STRUCT_FLOCK) /* {{{ */
 {
 	struct flock flck;
 	int ret;

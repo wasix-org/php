@@ -728,6 +728,7 @@ static zend_always_inline int zend_mm_bitset_is_free_range(zend_mm_bitset *bitse
 
 static zend_always_inline void zend_mm_hugepage(void* ptr, size_t size)
 {
+#ifndef __wasi__
 #if defined(MADV_HUGEPAGE)
 	(void)madvise(ptr, size, MADV_HUGEPAGE);
 #elif defined(HAVE_MEMCNTL)
@@ -735,6 +736,7 @@ static zend_always_inline void zend_mm_hugepage(void* ptr, size_t size)
 	(void)memcntl(ptr, size, MC_HAT_ADVISE, (char *)&m, 0, 0);
 #elif !defined(VM_FLAGS_SUPERPAGE_SIZE_2MB) && !defined(MAP_ALIGNED_SUPER)
 	zend_error_noreturn(E_ERROR, "huge_pages: thp unsupported on this platform");
+#endif
 #endif
 }
 
@@ -3024,6 +3026,9 @@ static void *tracked_malloc(size_t size ZEND_FILE_LINE_DC ZEND_FILE_LINE_ORIG_DC
 #if ZEND_MM_STAT
 	heap->size += size;
 	heap->real_size = heap->size;
+	size_t peak = MAX(heap->peak, heap->size);
+	heap->peak = peak;
+	heap->real_peak = peak;
 #endif
 	return ptr;
 }
@@ -3066,6 +3071,9 @@ static void *tracked_realloc(void *ptr, size_t new_size ZEND_FILE_LINE_DC ZEND_F
 #if ZEND_MM_STAT
 	heap->size += new_size - old_size;
 	heap->real_size = heap->size;
+	size_t peak = MAX(heap->peak, heap->size);
+	heap->peak = peak;
+	heap->real_peak = peak;
 #endif
 	return ptr;
 }
@@ -3279,9 +3287,15 @@ static void alloc_globals_ctor(zend_alloc_globals *alloc_globals)
 	char *tmp;
 
 #if ZEND_MM_CUSTOM
+#ifndef __wasi__
 	tmp = getenv("USE_ZEND_ALLOC");
 	if (tmp && !ZEND_ATOL(tmp)) {
+#endif
+#ifdef __wasi__
+		bool tracked = true;
+#else
 		bool tracked = (tmp = getenv("USE_TRACKED_ALLOC")) && ZEND_ATOL(tmp);
+#endif
 		zend_mm_heap *mm_heap = alloc_globals->mm_heap = malloc(sizeof(zend_mm_heap));
 		memset(mm_heap, 0, sizeof(zend_mm_heap));
 		mm_heap->use_custom_heap = ZEND_MM_CUSTOM_HEAP_STD;
@@ -3302,7 +3316,9 @@ static void alloc_globals_ctor(zend_alloc_globals *alloc_globals)
 			zend_hash_init(mm_heap->tracked_allocs, 1024, NULL, NULL, 1);
 		}
 		return;
+#ifndef __wasi__
 	}
+#endif
 #endif
 
 	tmp = getenv("USE_ZEND_ALLOC_HUGE_PAGES");

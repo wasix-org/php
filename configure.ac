@@ -190,6 +190,9 @@ AS_VAR_IF([php_cv_have_re2c_cgoto], [yes],
   [AS_VAR_APPEND([RE2C_FLAGS], [" -g"])])
 ])
 
+dnl Check if __wasi__ is defined by the compiler
+AC_CHECK_DECLS([__wasi__])
+
 dnl Platform-specific compile settings.
 dnl ----------------------------------------------------------------------------
 
@@ -672,7 +675,7 @@ int main(void) {
   [php_cv_func_getaddrinfo=yes],
   [php_cv_func_getaddrinfo=no],
   [AS_CASE([$host_alias],
-    [*linux*|*midipix], [php_cv_func_getaddrinfo=yes],
+    [*linux*|*midipix|*wasm*], [php_cv_func_getaddrinfo=yes],
     [php_cv_func_getaddrinfo=no])])],
 [php_cv_func_getaddrinfo=no])])
 AS_VAR_IF([php_cv_func_getaddrinfo], [yes],
@@ -1297,10 +1300,11 @@ if test "$fiber_asm" = 'yes'; then
   AC_MSG_RESULT([$fiber_asm_file])
 else
   AS_VAR_IF([fiber_os], [mac], [AC_DEFINE([_XOPEN_SOURCE], [1], [ ])])
-  AC_CHECK_HEADER([ucontext.h],
-    [AC_DEFINE([ZEND_FIBER_UCONTEXT], [1],
-      [Define to 1 if Zend fiber uses ucontext instead of boost context.])],
-    [AC_MSG_FAILURE([fibers not available on this platform])])
+  AS_VAR_IF([ac_cv_have_decl___wasi__], [yes], [],
+    [AC_CHECK_HEADER([ucontext.h],
+      [AC_DEFINE([ZEND_FIBER_UCONTEXT], [1],
+        [Define to 1 if Zend fiber uses ucontext instead of boost context.])],
+      [AC_MSG_FAILURE([fibers not available on this platform])])])
 fi
 
 ZEND_INIT

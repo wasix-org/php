@@ -642,6 +642,8 @@ EMPTY_SWITCH_DEFAULT_CASE()
 	_(ZEND_STR_8_DOT_3,                "8.3") \
 	_(ZEND_STR_8_DOT_4,                "8.4") \
 	_(ZEND_STR_8_DOT_5,                "8.5") \
+	_(ZEND_STR_INSTABOOT,              "x-edge-instaboot") \
+	_(ZEND_STR_INSTABOOT_SHUTDOWN,     "x-wasmer-instaboot-shutdown") \
 
 
 typedef enum _zend_known_string_id {

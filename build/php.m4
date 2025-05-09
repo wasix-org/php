@@ -1367,6 +1367,7 @@ int main(void) {
   [php_cv_type_cookie_off64_t=no],
   [AS_CASE([$host_alias],
     [*linux*], [php_cv_type_cookie_off64_t=yes],
+    [*wasm*], [php_cv_type_cookie_off64_t=yes],
     [php_cv_type_cookie_off64_t=no])]
   )])
   AS_VAR_IF([php_cv_type_cookie_off64_t], [yes],
@@ -1930,9 +1931,14 @@ AS_VAR_IF([pgsql_dir],,
 
 AS_VAR_IF([found_pgsql], [no], [dnl
   AC_MSG_CHECKING([for pg_config])
-  for i in $pgsql_dir $pgsql_dir/bin /usr/local/pgsql/bin /usr/local/bin /usr/bin ""; do
-    AS_IF([test -x $i/pg_config], [PG_CONFIG="$i/pg_config"; break;])
-  done
+  dnl Only probe for pg_config when no explicit installation dir was given.
+  dnl Otherwise a host pg_config (e.g. in /usr/bin) would override an explicit
+  dnl --with-pgsql=DIR pointing at a cross-compilation sysroot such as the WASIX
+  dnl deps, making detection use the host libpq instead of the target's.
+  AS_VAR_IF([pgsql_dir],,
+    [for i in /usr/local/pgsql/bin /usr/local/bin /usr/bin ""; do
+      AS_IF([test -x $i/pg_config], [PG_CONFIG="$i/pg_config"; break;])
+    done])
 
   AS_VAR_IF([PG_CONFIG],, [dnl
     AC_MSG_RESULT([not found])

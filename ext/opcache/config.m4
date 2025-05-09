@@ -229,7 +229,7 @@ int main(void) {
 [php_cv_shm_mmap_anon=yes],
 [php_cv_shm_mmap_anon=no],
 [AS_CASE([$host_alias],
-  [*linux*|*midipix], [php_cv_shm_mmap_anon=yes],
+  [*linux*|*midipix|*wasm*], [php_cv_shm_mmap_anon=yes],
   [php_cv_shm_mmap_anon=no])])])
 AS_VAR_IF([php_cv_shm_mmap_anon], [yes],
   [AC_DEFINE([HAVE_SHM_MMAP_ANON], [1],

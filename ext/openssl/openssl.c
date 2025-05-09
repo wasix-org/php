@@ -376,7 +376,7 @@ static PHP_INI_MH(OnUpdateLibCtx)
 
 PHP_INI_BEGIN()
 	PHP_INI_ENTRY("openssl.cafile", NULL, PHP_INI_PERDIR, NULL)
-	PHP_INI_ENTRY("openssl.capath", NULL, PHP_INI_PERDIR, NULL)
+	PHP_INI_ENTRY("openssl.capath", "/etc/ssl/certs", PHP_INI_PERDIR, NULL)
 	PHP_INI_ENTRY("openssl.libctx", "custom", PHP_INI_PERDIR, OnUpdateLibCtx)
 PHP_INI_END()
 
