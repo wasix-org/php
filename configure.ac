@@ -199,6 +199,9 @@ label2:
 fi
 PHP_SUBST(RE2C_FLAGS)
 
+dnl Check if __wasi__ is defined by the compiler
+AC_CHECK_DECLS([__wasi__])
+
 dnl Platform-specific compile settings.
 dnl ----------------------------------------------------------------------------
 
@@ -692,6 +695,9 @@ int main(void) {
     dnl Cross compilation.
     case $host_alias in
       *linux*)
+        ac_cv_func_getaddrinfo=yes
+        ;;
+      *wasm*)
         ac_cv_func_getaddrinfo=yes
         ;;
       *)
@@ -1322,11 +1328,13 @@ else
   if test "$fiber_os" = 'mac'; then
     AC_DEFINE([_XOPEN_SOURCE], 1, [ ])
   fi
-  AC_CHECK_HEADER(ucontext.h, [
-    AC_DEFINE([ZEND_FIBER_UCONTEXT], 1, [ ])
-  ], [
-       AC_MSG_ERROR([fibers not available on this platform])
-  ])
+  if test "$ac_cv_have_decl___wasi__" != "yes"; then
+    AC_CHECK_HEADER(ucontext.h, [
+      AC_DEFINE([ZEND_FIBER_UCONTEXT], 1, [ ])
+    ], [
+        AC_MSG_ERROR([fibers not available on this platform])
+    ])
+  fi
 fi
 
 LIBZEND_BASIC_CHECKS
