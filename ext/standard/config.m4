@@ -444,6 +444,25 @@ else
 fi
 
 dnl
+dnl Include libwasix_sendmail when building to WASIX
+dnl
+if test "$ac_cv_have_decl___wasi__" == "yes"; then
+  if test -n "$WASIX_SENDMAIL_LIBS"; then
+    PHP_EVAL_LIBLINE($WASIX_SENDMAIL_LIBS)
+  fi
+fi
+
+dnl
+dnl Whether to enable 64-bit long ints when building to WASIX;
+dnl wasm32 uses 32-bit pointers but supports 64-bit int operations.
+dnl
+if test "$ac_cv_have_decl___wasi__" == "yes"; then
+  if test "$WASIX_64BIT_LONG_PATCH" == "yes"; then
+    AC_DEFINE(WASIX_64BIT_LONG_PATCH, 1, [whether to use 64-bit longs for WASIX])
+  fi
+fi
+
+dnl
 dnl Setup extension sources
 dnl
 PHP_NEW_EXTENSION(standard, array.c base64.c basic_functions.c browscap.c crc32.c crypt.c \
