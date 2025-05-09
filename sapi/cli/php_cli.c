@@ -618,7 +618,7 @@ static int do_cli(int argc, char **argv) /* {{{ */
 
 	file_handle.filename = NULL;
 
-	zend_try {
+	zend_first_try {
 
 		CG(in_compilation) = 0; /* not initialized but needed for several options */
 
@@ -1327,17 +1327,27 @@ exit_loop:
 		CG(compiler_options) |= ZEND_COMPILE_EXTENDED_INFO;
 	}
 
-	zend_first_try {
 #ifndef PHP_CLI_WIN32_NO_CONSOLE
-		if (sapi_module == &cli_sapi_module) {
+	if (sapi_module == &cli_sapi_module) {
 #endif
-			exit_status = do_cli(argc, argv);
+		exit_status = do_cli(argc, argv);
 #ifndef PHP_CLI_WIN32_NO_CONSOLE
-		} else {
+	} else {
+		exit_status = do_cli_server(argc, argv);
+#ifdef __wasi__
+		// If any instaboot requests were received, we're now in warmup mode. We
+		// want to snapshot the process state, and then start another server to
+		// do the actual request handling.
+		if (exit_status == 0 && wasmer_instaboot_warmup_mode == WASMER_INSTABOOT_WARMUP_MODE_IN_PROGRESS) {
+			// Note: we can't asyncify a function that does exception handling, so
+			// the zend_try call was moved into do_cli_server and do_cli.
+			wasmer_instaboot_warmup_mode = WASMER_INSTABOOT_WARMUP_MODE_DONE;
+			wasix_proc_snapshot();
 			exit_status = do_cli_server(argc, argv);
 		}
 #endif
-	} zend_end_try();
+	}
+#endif
 out:
 	if (ini_path_override) {
 		free(ini_path_override);
