@@ -2,7 +2,7 @@
 
 set -eo
 
-wasmer run sapi/cli/php-eh.wasm \
+wasmer run sapi/cli/php.wasm \
   --llvm \
   --net \
   --mapdir /app:../wordpress \
