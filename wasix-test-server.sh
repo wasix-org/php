@@ -1,9 +1,9 @@
 #! /usr/bin/env sh
 
-set -eou
+set -eux
 
 wasmer run ./sapi/cli/php.wasm \
-  --singlepass \
+  --llvm \
   --net \
   --mapdir /app:./wasix-tests \
   --mapdir /etc/ssl:../php-wasix-deps/openssl/ssl \

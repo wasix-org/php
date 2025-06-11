@@ -4,10 +4,16 @@ set -u
 
 TEST_SERVER=${TEST_SERVER:-localhost:8080}
 
+while ! curl -s $TEST_SERVER > /dev/null; do
+  echo "Waiting for test server to start..."
+  sleep 10
+done
+
 ALL_TESTS=( \
   sqlite \
   sqlite-pdo \
-  mail \
+# skipped because having a mail server with proper credentials is difficult -.-
+# mail \
   mysql \
   mysql-pdo \
   pgsql \
