@@ -57,15 +57,15 @@ function test_mysql_db()
     $mysqli = mysqli_connect($conn_info->host, $conn_info->username, $conn_info->password, null, $conn_info->port);
 
     $dbname = "php_test_" . random_int(0, PHP_INT_MAX);
-    $mysqli->execute_query("CREATE DATABASE $dbname");
+    $mysqli->query("CREATE DATABASE $dbname");
     $mysqli->select_db($dbname);
 
-    $mysqli->execute_query('CREATE TABLE T (
+    $mysqli->query('CREATE TABLE T (
                             id INTEGER PRIMARY KEY,
                             txt TEXT NOT NULL);');
 
-    $mysqli->execute_query("INSERT INTO T VALUES (1, 'foo');");
-    $mysqli->execute_query("INSERT INTO T VALUES (2, 'bar');");
+    $mysqli->query("INSERT INTO T VALUES (1, 'foo');");
+    $mysqli->query("INSERT INTO T VALUES (2, 'bar');");
 
     $result = $mysqli->query('SELECT * from T');
 
