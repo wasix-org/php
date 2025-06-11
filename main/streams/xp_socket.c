@@ -29,10 +29,6 @@
 #include <sys/un.h>
 #endif
 
-#ifdef __wasi__
-#undef MSG_DONTWAIT
-#endif
-
 #ifndef MSG_DONTWAIT
 # define MSG_DONTWAIT 0
 #endif
@@ -65,7 +61,6 @@ static ssize_t php_sockop_write(php_stream *stream, const char *buf, size_t coun
 	php_netstream_data_t *sock = (php_netstream_data_t*)stream->abstract;
 	ssize_t didwrite;
 	struct timeval *ptimeout;
-	int send_flags;
 
 	if (!sock || sock->socket == -1) {
 		return 0;
@@ -77,12 +72,7 @@ static ssize_t php_sockop_write(php_stream *stream, const char *buf, size_t coun
 		ptimeout = &sock->timeout;
 
 retry:
-#ifdef __wasi__
-	send_flags = 0;
-#else
-	send_flags = (sock->is_blocked && ptimeout) ? MSG_DONTWAIT : 0;
-#endif
-	didwrite = send(sock->socket, buf, XP_SOCK_BUF_SIZE(count), send_flags);
+	didwrite = send(sock->socket, buf, XP_SOCK_BUF_SIZE(count), (sock->is_blocked && ptimeout) ? MSG_DONTWAIT : 0);
 
 	if (didwrite <= 0) {
 		char *estr;
