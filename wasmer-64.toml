@@ -1,6 +1,6 @@
 [package]
 name = 'php/php-64'
-version = '8.2.2801-rc.2'
+version = '8.2.2801'
 description = 'PHP is a popular general-purpose scripting language that is especially suited to web development. Fast, flexible and pragmatic, PHP powers everything from your blog to the most popular websites in the world. PHP is distributed under the PHP License v3.01.'
 readme = 'README.md'
 
@@ -12,6 +12,8 @@ readme = 'README.md'
 name = 'php'
 source = 'sapi/cli/php.wasm'
 abi = 'wasi'
+[module.annotations.suggested_compiler_optimizations]
+pass_params = true
 
 [[command]]
 name = 'php'
