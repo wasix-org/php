@@ -4736,6 +4736,7 @@ static zend_result accel_finish_startup_preload_subprocess(pid_t *pid)
 		return SUCCESS;
 	}
 
+#ifndef __wasi__
 	*pid = fork();
 	if (*pid == -1) {
 		zend_shared_alloc_unlock();
@@ -4748,12 +4749,10 @@ static zend_result accel_finish_startup_preload_subprocess(pid_t *pid)
 			zend_accel_error(ACCEL_LOG_WARNING, "Preloading failed to setgid(%d)", pw->pw_gid);
 			exit(1);
 		}
-#ifndef __wasi__
 		if (initgroups(pw->pw_name, pw->pw_gid) < 0) {
 			zend_accel_error(ACCEL_LOG_WARNING, "Preloading failed to initgroups(\"%s\", %d)", pw->pw_name, pw->pw_uid);
 			exit(1);
 		}
-#endif
 		if (setuid(pw->pw_uid) < 0) {
 			zend_accel_error(ACCEL_LOG_WARNING, "Preloading failed to setuid(%d)", pw->pw_uid);
 			exit(1);
@@ -4761,6 +4760,14 @@ static zend_result accel_finish_startup_preload_subprocess(pid_t *pid)
 	}
 
 	return SUCCESS;
+#else
+	// Note: in WASIX, there is only one uid; it has "root" access to everything within the
+	// sandbox, but not the base OS, so it's OK to run everything with that user. That is to
+	// say, we shouldn't need to fork a new process here.
+	// It is also a fact that forking doesn't work under WASIX+EH anyway.
+	zend_accel_error(ACCEL_LOG_FATAL, "Preloading cannot fork to spawn a new process in WASIX");
+	exit(1);
+#endif
 }
 #endif /* ZEND_WIN32 */
 
