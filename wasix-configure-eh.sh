@@ -55,12 +55,12 @@ export \
     -g -flto -O2 -fwasm-exceptions" \
   CXXFLAGS="-matomics -mbulk-memory -mmutable-globals -pthread -mthread-model posix -ftls-model=local-exec \
     -fno-trapping-math -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS \
-    -g -flto -fno-exceptions -O2 -fwasm-exceptions" \
+    -g -flto -O2 -fwasm-exceptions -mllvm --wasm-enable-eh" \
   LIBS="-Wl,--shared-memory -Wl,--max-memory=4294967296 -Wl,--import-memory -Wl,--export-dynamic \
     -Wl,--export=__heap_base -Wl,--export=__stack_pointer -Wl,--export=__data_end -Wl,--export=__wasm_init_tls \
     -Wl,--export=__wasm_signal -Wl,--export=__tls_size -Wl,--export=__tls_align -Wl,--export=__tls_base \
     -lwasi-emulated-mman -flto -g -Wl,-z,stack-size=8388608 -Wl,--error-limit=0 -L$PHP_WASIX_DEPS/lib-eh -v \
-    --no-wasm-opt -Wl,-mllvm,--wasm-enable-sjlj"
+    --no-wasm-opt -Wl,-mllvm,--wasm-enable-sjlj -Wl,-mllvm,--wasm-enable-eh -Wl,-lunwind"
 
 ./buildconf --force
 
