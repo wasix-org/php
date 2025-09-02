@@ -12,9 +12,12 @@ on:
       - "*-wasix"
 
 jobs:
-  build-and-test-32:
-    name: Build and Test - 32-bit
+  build-and-test:
+    name: Build and Test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        variant: ["32", "64"]
     steps:
       - name: Check out
         uses: actions/checkout@v3
@@ -37,7 +40,7 @@ jobs:
 
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 20
+          sudo ./llvm.sh 21
 
           wget https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz
           tar -xzf binaryen-version_123-x86_64-linux.tar.gz
@@ -45,12 +48,12 @@ jobs:
 
           sudo rm -f /usr/bin/clang
           sudo rm -f /usr/bin/clang++
-          sudo ln -s /usr/bin/clang-20 /usr/bin/clang
-          sudo ln -s /usr/bin/clang++-20 /usr/bin/clang++
-          sudo ln -s /usr/bin/llvm-ar-20 /usr/bin/llvm-ar
-          sudo ln -s /usr/bin/llvm-nm-20 /usr/bin/llvm-nm
-          sudo ln -s /usr/bin/llvm-ranlib-20 /usr/bin/llvm-ranlib
-          sudo ln -s /usr/bin/llvm-objdump-20 /usr/bin/llvm-objdump
+          sudo ln -s /usr/bin/clang-21 /usr/bin/clang
+          sudo ln -s /usr/bin/clang++-21 /usr/bin/clang++
+          sudo ln -s /usr/bin/llvm-ar-21 /usr/bin/llvm-ar
+          sudo ln -s /usr/bin/llvm-nm-21 /usr/bin/llvm-nm
+          sudo ln -s /usr/bin/llvm-ranlib-21 /usr/bin/llvm-ranlib
+          sudo ln -s /usr/bin/llvm-objdump-21 /usr/bin/llvm-objdump
 
       - name: Tool Versions
         run: |
@@ -83,9 +86,9 @@ jobs:
         run: |
           cd sysroot
           tar xzf wasix-libc.tar.gz
-          sudo mkdir -p /usr/lib/llvm-20/lib/clang/20/lib/wasm32-unknown-wasi
-          sudo cp wasix-sysroot-eh/lib/wasm32-wasi/libclang_rt.builtins-wasm32.a \
-            /usr/lib/llvm-20/lib/clang/20/lib/wasm32-unknown-wasi/libclang_rt.builtins.a
+          sudo mkdir -p /usr/lib/llvm-21/lib/clang/21/lib/wasm32-unknown-wasi
+          sudo cp wasix-sysroot-eh/sysroot/lib/wasm32-wasi/libclang_rt.builtins-wasm32.a \
+            /usr/lib/llvm-21/lib/clang/21/lib/wasm32-unknown-wasi/libclang_rt.builtins.a
 
       - name: Build
         env:
@@ -95,7 +98,7 @@ jobs:
           export SYSROOT=$(pwd)/sysroot/wasix-sysroot-eh/sysroot
           export PHP_WASIX_DEPS=$(pwd)/php-wasix-deps
           cd php
-          bash wasix-configure-eh-32.sh || { cat config.log; exit -1; }
+          bash wasix-configure-eh-${{ matrix.variant }}.sh || { cat config.log; exit -1; }
 
       - name: Setup Wasmer
         uses: wasmerio/setup-wasmer@v3.1
@@ -118,114 +121,5 @@ jobs:
       - name: Archive build
         uses: actions/upload-artifact@v4
         with:
-          name: php-wasix-32
-          path: php/sapi/cli/php.wasm
-
-  build-and-test-64:
-    name: Build and Test - 64-bit
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out
-        uses: actions/checkout@v3
-        with:
-          submodules: "recursive"
-          path: php
-
-      - name: Check out php-wasix-deps
-        uses: actions/checkout@v3
-        with:
-          repository: wasix-org/php-wasix-deps
-          submodules: "recursive"
-          path: php-wasix-deps
-
-      - name: OS Setup (Ubuntu)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential wabt re2c
-          npm i -g pnpm concurrently
-
-          wget https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz
-          tar -xzf binaryen-version_123-x86_64-linux.tar.gz
-          sudo cp binaryen-version_123/bin/* /usr/bin/
-
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 20
-
-          sudo rm -f /usr/bin/clang
-          sudo rm -f /usr/bin/clang++
-          sudo ln -s /usr/bin/clang-20 /usr/bin/clang
-          sudo ln -s /usr/bin/clang++-20 /usr/bin/clang++
-          sudo ln -s /usr/bin/llvm-ar-20 /usr/bin/llvm-ar
-          sudo ln -s /usr/bin/llvm-nm-20 /usr/bin/llvm-nm
-          sudo ln -s /usr/bin/llvm-ranlib-20 /usr/bin/llvm-ranlib
-          sudo ln -s /usr/bin/llvm-objdump-20 /usr/bin/llvm-objdump
-
-      - name: Tool Versions
-        run: |
-          echo clang
-          clang -v
-          echo '####################'
-          echo llvm-ar
-          llvm-ar -V
-          echo '####################'
-          echo llvm-nm
-          llvm-nm -V
-          echo '####################'
-          echo llvm-ranlib
-          llvm-ranlib -V
-          echo '####################'
-          echo wasm-opt
-          wasm-opt --version
-          echo '####################'
-          echo wasm-strip
-          wasm-strip --version
-
-      - name: Download wasix-libc
-        uses: dsaltares/fetch-gh-release-asset@1.1.2
-        with:
-          repo: wasix-org/wasix-libc
-          file: sysroot-eh.tar.gz
-          target: sysroot/wasix-libc.tar.gz
-
-      - name: Unpack wasix-libc
-        run: |
-          cd sysroot
-          tar xzf wasix-libc.tar.gz
-          sudo mkdir -p /usr/lib/llvm-20/lib/clang/20/lib/wasm32-unknown-wasi
-          sudo cp wasix-sysroot-eh/lib/wasm32-wasi/libclang_rt.builtins-wasm32.a \
-            /usr/lib/llvm-20/lib/clang/20/lib/wasm32-unknown-wasi/libclang_rt.builtins.a
-
-      - name: Build
-        env:
-          SENDMAIL_DEFAULT_USERNAME: ${{ secrets.SENDMAIL_DEFAULT_USERNAME }}
-          SENDMAIL_DEFAULT_PASSWORD: ${{ secrets.SENDMAIL_DEFAULT_PASSWORD }}
-        run: |
-          export SYSROOT=$(pwd)/sysroot/wasix-sysroot-eh/sysroot
-          export PHP_WASIX_DEPS=$(pwd)/php-wasix-deps
-          cd php
-          bash wasix-configure-eh-64.sh || { cat config.log; exit -1; }
-
-      - name: Setup Wasmer
-        uses: wasmerio/setup-wasmer@v3.1
-
-      - name: Run WASIX tests
-        env:
-          MAIL_USERNAME: ${{ secrets.SENDMAIL_DEFAULT_USERNAME }}
-          MAIL_PASSWORD: ${{ secrets.SENDMAIL_DEFAULT_PASSWORD }}
-          MAIL_HOST: smtp.mailgun.org
-          MAIL_PORT: 587
-        run: |
-          cd php
-          bash wasix-test-start-containers.sh
-          conc --kill-others --success "command-1" \
-            "bash wasix-test-server.sh" \
-            "bash wasix-test-run.sh"
-          bash wasix-test-stop-containers.sh
-          echo All tests are passing! 🎉
-
-      - name: Archive build
-        uses: actions/upload-artifact@v4
-        with:
-          name: php-wasix-64
+          name: php-wasix-${{ matrix.variant }}
           path: php/sapi/cli/php.wasm

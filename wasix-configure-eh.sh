@@ -45,11 +45,11 @@ export \
   PHP_BUILD_SYSTEM="clang(WASIX+WasmEH)" \
   PHP_EXTRA_INCLUDES="" \
   PHP_IPV6="yes" \
-  RANLIB=llvm-ranlib-20 \
-  AR=llvm-ar-20 \
-  NM=llvm-nm-20 \
-  CC="clang-20 --target=wasm32-wasi --sysroot=$SYSROOT" \
-  CXX="clang++-20 --target=wasm32-wasi --sysroot=$SYSROOT" \
+  RANLIB=llvm-ranlib-21 \
+  AR=llvm-ar-21 \
+  NM=llvm-nm-21 \
+  CC="clang-21 --target=wasm32-wasi --sysroot=$SYSROOT" \
+  CXX="clang++-21 --target=wasm32-wasi --sysroot=$SYSROOT" \
   CFLAGS="-matomics -mbulk-memory -mmutable-globals -pthread -mthread-model posix -ftls-model=local-exec \
     -fno-trapping-math -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS \
     -g -flto -O2 -fwasm-exceptions" \
