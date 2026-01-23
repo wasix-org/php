@@ -2823,6 +2823,7 @@ static inline zend_result accel_find_sapi(void)
 		"fuzzer",
 		"frankenphp",
 		"ngx-php",
+		"phpix",
 		NULL
 	};
 	const char **sapi_name;
@@ -2942,7 +2943,7 @@ void accel_globals_ctor(zend_accel_globals *accel_globals)
 }
 
 #ifdef ZTS
-static void accel_globals_dtor(zend_accel_globals *accel_globals)
+void accel_globals_dtor(zend_accel_globals *accel_globals)
 {
 	zend_string_free(accel_globals->key);
 }
@@ -3118,11 +3119,6 @@ static void accel_move_code_to_huge_pages(void)
 
 int accel_startup(zend_extension *extension)
 {
-#ifdef ZTS
-	accel_globals_id = ts_allocate_id(&accel_globals_id, sizeof(zend_accel_globals), (ts_allocate_ctor) accel_globals_ctor, (ts_allocate_dtor) accel_globals_dtor);
-#else
-#endif
-
 #ifdef HAVE_JIT
 	zend_jit_init();
 #endif
