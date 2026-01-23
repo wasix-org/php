@@ -7,6 +7,7 @@ if [ -f Makefile ]; then
 fi
 
 PHP_WASIX_DEPS=${PHP_WASIX_DEPS:-"../php-wasix-deps"}
+WASIX_EXTRA_CONFIGURE_FLAGS=${WASIX_EXTRA_CONFIGURE_FLAGS:-""}
 
 export \
   CURL_CFLAGS="-I$PHP_WASIX_DEPS/include/curl" \
@@ -65,6 +66,7 @@ export \
   --enable-fiber-asm --with-curl --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-zip --with-sodium \
   --with-pgsql="$PHP_WASIX_DEPS"/pgsql-eh --with-pdo-pgsql="$PHP_WASIX_DEPS"/pgsql-eh --enable-intl \
   --with-pdo-sqlite --enable-ftp --enable-igbinary --with-imagick \
+  $WASIX_EXTRA_CONFIGURE_FLAGS \
   --program-suffix=".wasm"
 
 ./wasix-build-eh.sh
