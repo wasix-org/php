@@ -2839,6 +2839,8 @@ static inline int accel_find_sapi(void)
 		"uwsgi",
 		"fuzzer",
 		"frankenphp",
+		"ngx-php",
+		"phpix",
 		NULL
 	};
 	const char **sapi_name;
@@ -3125,11 +3127,6 @@ static void accel_move_code_to_huge_pages(void)
 
 int accel_startup(zend_extension *extension)
 {
-#ifdef ZTS
-	accel_globals_id = ts_allocate_id(&accel_globals_id, sizeof(zend_accel_globals), (ts_allocate_ctor) accel_globals_ctor, NULL);
-#else
-#endif
-
 #ifdef HAVE_JIT
 	zend_jit_init();
 #endif
