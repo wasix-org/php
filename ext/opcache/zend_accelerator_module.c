@@ -409,7 +409,11 @@ static ZEND_MINIT_FUNCTION(zend_accelerator)
 
 	// Run the ctor before registering the INI entries, as that will
 	// read and set the values
-	accel_globals_ctor(&accel_globals);
+#ifdef ZTS
+	accel_globals_id = ts_allocate_id(&accel_globals_id, sizeof(zend_accel_globals), (ts_allocate_ctor) accel_globals_ctor, NULL);
+#else
+    accel_globals_ctor(&accel_globals);
+#endif
 
 	REGISTER_INI_ENTRIES();
 
