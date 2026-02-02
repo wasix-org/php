@@ -458,15 +458,6 @@ else
 fi
 
 dnl
-dnl Include libwasix_sendmail when building to WASIX
-dnl
-if test "$ac_cv_have_decl___wasi__" == "yes"; then
-  if test -n "$WASIX_SENDMAIL_LIBS"; then
-    PHP_EVAL_LIBLINE($WASIX_SENDMAIL_LIBS)
-  fi
-fi
-
-dnl
 dnl Whether to enable 64-bit long ints when building to WASIX;
 dnl wasm32 uses 32-bit pointers but supports 64-bit int operations.
 dnl
