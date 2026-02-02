@@ -2,11 +2,6 @@ name: WASIX build and test
 
 on:
   workflow_call:
-    secrets:
-      SENDMAIL_DEFAULT_USERNAME:
-        required: true
-      SENDMAIL_DEFAULT_PASSWORD:
-        required: true
   pull_request:
     branches:
       - "*-wasix"
@@ -88,9 +83,6 @@ jobs:
             /usr/lib/llvm-20/lib/clang/20/lib/wasm32-unknown-wasi/libclang_rt.builtins.a
 
       - name: Build
-        env:
-          SENDMAIL_DEFAULT_USERNAME: ${{ secrets.SENDMAIL_DEFAULT_USERNAME }}
-          SENDMAIL_DEFAULT_PASSWORD: ${{ secrets.SENDMAIL_DEFAULT_PASSWORD }}
         run: |
           export SYSROOT=$(pwd)/sysroot/wasix-sysroot-eh/sysroot
           export PHP_WASIX_DEPS=$(pwd)/php-wasix-deps
@@ -101,11 +93,6 @@ jobs:
         uses: wasmerio/setup-wasmer@v3.1
 
       - name: Run WASIX tests
-        env:
-          MAIL_USERNAME: ${{ secrets.SENDMAIL_DEFAULT_USERNAME }}
-          MAIL_PASSWORD: ${{ secrets.SENDMAIL_DEFAULT_PASSWORD }}
-          MAIL_HOST: smtp.mailgun.org
-          MAIL_PORT: 587
         run: |
           cd php
           bash wasix-test-start-containers.sh
