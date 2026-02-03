@@ -5,8 +5,8 @@ set -eux
 wasmer run ./sapi/cli/php.wasm \
   --llvm \
   --net \
-  --mapdir /app:./wasix-tests \
-  --mapdir /etc/ssl:../php-wasix-deps/openssl/ssl \
+  --volume ./wasix-tests:/app \
+  --volume ../php-wasix-deps/openssl/ssl:/etc/ssl \
   --env MYSQL_HOST=localhost \
   --env MYSQL_USERNAME=root \
   --env MYSQL_PASSWORD=passwd \
