@@ -59,7 +59,8 @@ export \
     -Wl,--export=__heap_base -Wl,--export=__stack_pointer -Wl,--export=__data_end -Wl,--export=__wasm_init_tls \
     -Wl,--export=__wasm_signal -Wl,--export=__tls_size -Wl,--export=__tls_align -Wl,--export=__tls_base \
     -lwasi-emulated-mman -flto -g -Wl,-z,stack-size=8388608 -Wl,--error-limit=0 -L$PHP_WASIX_DEPS/lib-eh -v \
-    --no-wasm-opt -Wl,-mllvm,--wasm-enable-sjlj -Wl,-mllvm,--wasm-enable-eh -Wl,-lunwind"
+    --no-wasm-opt -Wl,-mllvm,--wasm-enable-sjlj -Wl,-mllvm,--wasm-enable-eh -Wl,-lunwind"  \
+  PROG_SENDMAIL="/usr/bin/sendmail"
 
 ./buildconf --force
 
