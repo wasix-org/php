@@ -5,9 +5,9 @@ set -eo
 wasmer run sapi/cli/php.wasm \
   --llvm \
   --net \
-  --mapdir /app:../wordpress \
-  --mapdir /etc/ssl:../php-wasix-deps/openssl/ssl \
-  --mapdir /icu:../php-wasix-deps/icu \
+  --volume ../wordpress:/app \
+  --volume ../php-wasix-deps/openssl/ssl:/etc/ssl \
+  --volume ../php-wasix-deps/icu:/icu \
   --env SSL_CERT_DIR=/etc/ssl/certs \
   --env OPENSSL_CONF=/etc/ssl/openssl.cnf \
   --use amin/bash \
