@@ -58,7 +58,8 @@ export \
     -Wl,--export=__wasm_signal -Wl,--export=__tls_size -Wl,--export=__tls_align -Wl,--export=__tls_base \
     -lwasi-emulated-mman -flto -g -Wl,-z,stack-size=8388608 -Wl,--error-limit=0 -L$PHP_WASIX_DEPS/lib-eh -v \
     --no-wasm-opt -Wl,-mllvm,--wasm-enable-sjlj \
-    -liconv -lcharset -licrt"
+    -liconv -lcharset -licrt" \
+  PROG_SENDMAIL="/usr/bin/sendmail"
 
 ./buildconf --force
 
