@@ -68,5 +68,3 @@ export \
   --with-pdo-sqlite --enable-ftp --enable-igbinary --with-imagick \
   $WASIX_EXTRA_CONFIGURE_FLAGS \
   --program-suffix=".wasm"
-
-./wasix-build-eh.sh
