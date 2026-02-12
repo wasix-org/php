@@ -73,6 +73,7 @@ jobs:
           export PHP_WASIX_DEPS=$(pwd)/php-wasix-deps
           cd php
           bash wasix-configure-eh-${{ matrix.variant }}.sh || { cat config.log; exit -1; }
+          bash wasix-build-eh.sh
 
       - name: Setup Wasmer
         uses: wasmerio/setup-wasmer@v3.1
