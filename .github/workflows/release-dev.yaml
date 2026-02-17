@@ -36,6 +36,45 @@ jobs:
     uses: "./.github/workflows/wasix-pr.yaml"
     needs: version-check
 
+  create-libphp-release:
+    runs-on: ubuntu-latest
+    needs:
+      - build-and-test
+      - version-check
+    permissions:
+      contents: write
+    steps:
+      - name: Download libphp artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Package libphp artifacts
+        run: |
+          TAG_NAME=${{github.ref_name}}
+          VERSION_NUMBER=${TAG_NAME#dev-}
+          
+          # Package 32-bit libphp
+          cd release-artifacts/libphp-wasix-32
+          tar -czf ../libphp-wasix-32-${VERSION_NUMBER}.tar.gz *
+          cd ../..
+          
+          # Package 64-bit libphp
+          cd release-artifacts/libphp-wasix-64
+          tar -czf ../libphp-wasix-64-${VERSION_NUMBER}.tar.gz *
+          cd ../..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release-artifacts/libphp-wasix-32-*.tar.gz
+            release-artifacts/libphp-wasix-64-*.tar.gz
+          draft: false
+          prerelease: true
+          generate_release_notes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   release:
     runs-on: ubuntu-latest
     needs:
