@@ -46,8 +46,8 @@ export \
   NM="wasixnm" \
   CC="wasixcc" \
   CXX="wasixcc++" \
-  CFLAGS="-g -flto -O2" \
-  CXXFLAGS="-g -flto -O2" \
+  CFLAGS="-g -flto -O2 -Wno-incompatible-function-pointer-types -Wno-compare-distinct-pointer-types" \
+  CXXFLAGS="-g -flto -O2 -Wno-incompatible-function-pointer-types -Wno-compare-distinct-pointer-types" \
   LIBS="-L$PHP_WASIX_DEPS/lib-eh --no-wasm-opt" \
   WASIXCC_INCLUDE_CPP_SYMBOLS="yes" \
   WASIXCC_WASM_EXCEPTIONS="yes" \
