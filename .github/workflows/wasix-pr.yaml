@@ -2,14 +2,12 @@ name: WASIX build and test
 
 on:
   workflow_call:
-    secrets:
-      SENDMAIL_DEFAULT_USERNAME:
-        required: true
-      SENDMAIL_DEFAULT_PASSWORD:
-        required: true
   pull_request:
     branches:
       - "*-wasix"
+
+permissions:
+  contents: read
 
 jobs:
   build-and-test:
@@ -35,39 +33,33 @@ jobs:
       - name: OS Setup (Ubuntu)
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential wabt re2c
+          sudo apt-get install -y build-essential wabt re2c curl xz-utils tar
           npm i -g pnpm concurrently
-
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 21
 
           wget https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz
           tar -xzf binaryen-version_123-x86_64-linux.tar.gz
           sudo cp binaryen-version_123/bin/* /usr/bin/
 
-          sudo rm -f /usr/bin/clang
-          sudo rm -f /usr/bin/clang++
-          sudo ln -s /usr/bin/clang-21 /usr/bin/clang
-          sudo ln -s /usr/bin/clang++-21 /usr/bin/clang++
-          sudo ln -s /usr/bin/llvm-ar-21 /usr/bin/llvm-ar
-          sudo ln -s /usr/bin/llvm-nm-21 /usr/bin/llvm-nm
-          sudo ln -s /usr/bin/llvm-ranlib-21 /usr/bin/llvm-ranlib
-          sudo ln -s /usr/bin/llvm-objdump-21 /usr/bin/llvm-objdump
+      - name: Install wasixcc
+        uses: wasix-org/wasixcc@main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          sysroot-tag: v2026-02-16.1
+          version: v0.3.0
 
       - name: Tool Versions
         run: |
-          echo clang
-          clang -v
+          echo wasixcc
+          wasixcc -v
           echo '####################'
-          echo llvm-ar
-          llvm-ar -V
+          echo wasixar
+          wasixar -V
           echo '####################'
-          echo llvm-nm
-          llvm-nm -V
+          echo wasixnm
+          wasixnm -V
           echo '####################'
-          echo llvm-ranlib
-          llvm-ranlib -V
+          echo wasixranlib
+          wasixranlib -V
           echo '####################'
           echo wasm-opt
           wasm-opt --version
@@ -75,25 +67,7 @@ jobs:
           echo wasm-strip
           wasm-strip --version
 
-      - name: Download wasix-libc
-        uses: dsaltares/fetch-gh-release-asset@1.1.2
-        with:
-          repo: wasix-org/wasix-libc
-          file: sysroot-eh.tar.gz
-          target: sysroot/wasix-libc.tar.gz
-
-      - name: Unpack wasix-libc
-        run: |
-          cd sysroot
-          tar xzf wasix-libc.tar.gz
-          sudo mkdir -p /usr/lib/llvm-21/lib/clang/21/lib/wasm32-unknown-wasi
-          sudo cp wasix-sysroot-eh/sysroot/lib/wasm32-wasi/libclang_rt.builtins-wasm32.a \
-            /usr/lib/llvm-21/lib/clang/21/lib/wasm32-unknown-wasi/libclang_rt.builtins.a
-
       - name: Build
-        env:
-          SENDMAIL_DEFAULT_USERNAME: ${{ secrets.SENDMAIL_DEFAULT_USERNAME }}
-          SENDMAIL_DEFAULT_PASSWORD: ${{ secrets.SENDMAIL_DEFAULT_PASSWORD }}
         run: |
           export SYSROOT=$(pwd)/sysroot/wasix-sysroot-eh/sysroot
           export PHP_WASIX_DEPS=$(pwd)/php-wasix-deps
@@ -104,11 +78,6 @@ jobs:
         uses: wasmerio/setup-wasmer@v3.1
 
       - name: Run WASIX tests
-        env:
-          MAIL_USERNAME: ${{ secrets.SENDMAIL_DEFAULT_USERNAME }}
-          MAIL_PASSWORD: ${{ secrets.SENDMAIL_DEFAULT_PASSWORD }}
-          MAIL_HOST: smtp.mailgun.org
-          MAIL_PORT: 587
         run: |
           cd php
           bash wasix-test-start-containers.sh
