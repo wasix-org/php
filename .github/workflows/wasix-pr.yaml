@@ -69,7 +69,6 @@ jobs:
 
       - name: Build
         run: |
-          export SYSROOT=$(pwd)/sysroot/wasix-sysroot-eh/sysroot
           export PHP_WASIX_DEPS=$(pwd)/php-wasix-deps
           cd php
           bash wasix-configure-eh-${{ matrix.variant }}.sh || { cat config.log; exit -1; }
@@ -93,3 +92,73 @@ jobs:
         with:
           name: php-wasix-${{ matrix.variant }}
           path: php/sapi/cli/php.wasm
+
+  build-libphp:
+    name: Build libphp
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        variant: ["32", "64"]
+    steps:
+      - name: Check out
+        uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+          path: php
+
+      - name: Check out php-wasix-deps
+        uses: actions/checkout@v3
+        with:
+          repository: wasix-org/php-wasix-deps
+          submodules: "recursive"
+          path: php-wasix-deps
+
+      - name: OS Setup (Ubuntu)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential wabt re2c curl xz-utils tar
+          npm i -g pnpm concurrently
+
+          wget https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz
+          tar -xzf binaryen-version_123-x86_64-linux.tar.gz
+          sudo cp binaryen-version_123/bin/* /usr/bin/
+
+      - name: Install wasixcc
+        uses: wasix-org/wasixcc@main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          sysroot-tag: v2026-02-16.1
+          version: v0.3.0
+
+      - name: Tool Versions
+        run: |
+          echo wasixcc
+          wasixcc -v
+          echo '####################'
+          echo wasixar
+          wasixar -V
+          echo '####################'
+          echo wasixnm
+          wasixnm -V
+          echo '####################'
+          echo wasixranlib
+          wasixranlib -V
+          echo '####################'
+          echo wasm-opt
+          wasm-opt --version
+          echo '####################'
+          echo wasm-strip
+          wasm-strip --version
+
+      - name: Build
+        run: |
+          export PHP_WASIX_DEPS=$(pwd)/php-wasix-deps
+          cd php
+          bash wasix-configure-libphp-${{ matrix.variant }}.sh || { cat config.log; exit -1; }
+          bash wasix-build-libphp.sh
+
+      - name: Archive build
+        uses: actions/upload-artifact@v4
+        with:
+          name: libphp-wasix-${{ matrix.variant }}
+          path: php/install
