@@ -6,7 +6,6 @@ if [ -f Makefile ]; then
   make clean
 fi
 
-SYSROOT=${SYSROOT:-"/home/arshia/repos/wasmer/wasix-libc/sysroot32-eh"}
 PHP_WASIX_DEPS=${PHP_WASIX_DEPS:-"../php-wasix-deps"}
 
 export \
@@ -41,26 +40,20 @@ export \
   ONIG_LIBS="-lonig" \
   IM_IMAGEMAGICK_CFLAGS="-I$PHP_WASIX_DEPS/include/ImageMagick -DIM_MAGICKWAND_HEADER_STYLE_SEVEN -DMAGICKCORE_QUANTUM_DEPTH=16 -DMAGICKCORE_HDRI_ENABLE=1 -DMAGICKCORE_CHANNEL_MASK_DEPTH=32" \
   IM_IMAGEMAGICK_LIBS="-lMagickCore-7.Q16HDRI -lMagickWand-7.Q16HDRI -ltiff" \
-  WASIX_SENDMAIL_LIBS="-lwasix_sendmail" \
   PHP_BUILD_SYSTEM="clang(WASIX+WasmEH)" \
   PHP_EXTRA_INCLUDES="" \
   PHP_IPV6="yes" \
-  RANLIB=llvm-ranlib-21 \
-  AR=llvm-ar-21 \
-  NM=llvm-nm-21 \
-  CC="clang-21 --target=wasm32-wasi --sysroot=$SYSROOT" \
-  CXX="clang++-21 --target=wasm32-wasi --sysroot=$SYSROOT" \
-  CFLAGS="-matomics -mbulk-memory -mmutable-globals -pthread -mthread-model posix -ftls-model=local-exec \
-    -fno-trapping-math -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS \
-    -g -flto -O2 -fwasm-exceptions" \
-  CXXFLAGS="-matomics -mbulk-memory -mmutable-globals -pthread -mthread-model posix -ftls-model=local-exec \
-    -fno-trapping-math -D_WASI_EMULATED_MMAN -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_PROCESS_CLOCKS \
-    -g -flto -O2 -fwasm-exceptions -mllvm --wasm-enable-eh" \
-  LIBS="-Wl,--shared-memory -Wl,--max-memory=4294967296 -Wl,--import-memory -Wl,--export-dynamic \
-    -Wl,--export=__heap_base -Wl,--export=__stack_pointer -Wl,--export=__data_end -Wl,--export=__wasm_init_tls \
-    -Wl,--export=__wasm_signal -Wl,--export=__tls_size -Wl,--export=__tls_align -Wl,--export=__tls_base \
-    -lwasi-emulated-mman -flto -g -Wl,-z,stack-size=8388608 -Wl,--error-limit=0 -L$PHP_WASIX_DEPS/lib-eh -v \
-    --no-wasm-opt -Wl,-mllvm,--wasm-enable-sjlj -Wl,-mllvm,--wasm-enable-eh -Wl,-lunwind"
+  RANLIB="wasixranlib" \
+  AR="wasixar" \
+  NM="wasixnm" \
+  CC="wasixcc" \
+  CXX="wasixcc++" \
+  CFLAGS="-g -flto -O2" \
+  CXXFLAGS="-g -flto -O2" \
+  LIBS="-L$PHP_WASIX_DEPS/lib-eh --no-wasm-opt" \
+  WASIXCC_INCLUDE_CPP_SYMBOLS="yes" \
+  WASIXCC_WASM_EXCEPTIONS="yes" \
+  PROG_SENDMAIL="/usr/bin/sendmail"
 
 ./buildconf --force
 
@@ -70,7 +63,7 @@ export \
   --with-valgrind=no --with-pcre-jit=no --with-iconv --disable-huge-code-pages --disable-phpdbg \
   --enable-bcmath --enable-tidy --enable-gd --enable-exif --with-jpeg --with-freetype --with-webp \
   --enable-fiber-asm --with-curl --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-zip --with-sodium \
-  --with-pgsql=$PHP_WASIX_DEPS/pgsql-eh --with-pdo-pgsql=$PHP_WASIX_DEPS/pgsql-eh --enable-intl \
+  --with-pgsql="$PHP_WASIX_DEPS"/pgsql-eh --with-pdo-pgsql="$PHP_WASIX_DEPS"/pgsql-eh --enable-intl \
   --with-pdo-sqlite --enable-ftp --enable-igbinary --with-imagick \
   --program-suffix=".wasm"
 
