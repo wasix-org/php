@@ -46,9 +46,9 @@ export \
   NM="wasixnm" \
   CC="wasixcc" \
   CXX="wasixcc++" \
-  CFLAGS="-g -flto -O2 -Wno-incompatible-function-pointer-types -Wno-compare-distinct-pointer-types" \
-  CXXFLAGS="-g -flto -O2 -Wno-incompatible-function-pointer-types -Wno-compare-distinct-pointer-types" \
-  LIBS="-L$PHP_WASIX_DEPS/lib-eh --no-wasm-opt" \
+  CFLAGS="-g -flto -O4 -Wno-incompatible-function-pointer-types -Wno-compare-distinct-pointer-types" \
+  CXXFLAGS="-g -flto -O4 -Wno-incompatible-function-pointer-types -Wno-compare-distinct-pointer-types" \
+  LIBS="-L$PHP_WASIX_DEPS/lib-eh --no-wasm-opt -g -flto -O4" \
   WASIXCC_INCLUDE_CPP_SYMBOLS="yes" \
   WASIXCC_WASM_EXCEPTIONS="yes" \
   PROG_SENDMAIL="/usr/bin/sendmail"
@@ -62,7 +62,7 @@ export \
   --enable-bcmath --enable-tidy --enable-gd --enable-exif --with-jpeg --with-freetype --with-webp \
   --enable-fiber-asm --with-curl --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-zip --with-sodium \
   --with-pgsql="$PHP_WASIX_DEPS"/pgsql-eh --with-pdo-pgsql="$PHP_WASIX_DEPS"/pgsql-eh --enable-intl \
-  --with-pdo-sqlite --enable-ftp --enable-igbinary --with-imagick  --with-iconv="$PHP_WASIX_DEPS"/iconv-eh \
+  --with-pdo-sqlite --enable-ftp --enable-igbinary --with-imagick  --with-iconv="$PHP_WASIX_DEPS"/iconv-eh --enable-debug \
   --program-suffix=".wasm"
 
 ./wasix-build-eh.sh
