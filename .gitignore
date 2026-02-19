@@ -132,6 +132,7 @@ config.h.in
 /scripts/php-config
 /scripts/phpize
 php
+php-debug.wasm
 php.wasm
 
 # ------------------------------------------------------------------------------
