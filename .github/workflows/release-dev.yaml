@@ -1,4 +1,4 @@
-name: Release
+name: Release to Dev
 
 on:
   push:
@@ -35,9 +35,6 @@ jobs:
   build-and-test:
     uses: "./.github/workflows/wasix-pr.yaml"
     needs: version-check
-    secrets:
-      SENDMAIL_DEFAULT_USERNAME: ${{ secrets.SENDMAIL_DEFAULT_USERNAME }}
-      SENDMAIL_DEFAULT_PASSWORD: ${{ secrets.SENDMAIL_DEFAULT_PASSWORD }}
 
   release:
     runs-on: ubuntu-latest

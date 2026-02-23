@@ -4692,6 +4692,7 @@ static int accel_finish_startup(void)
 				return FAILURE;
 			}
 
+#ifndef __wasi__
 			pid = fork();
 			if (pid == -1) {
 				zend_shared_alloc_unlock();
@@ -4731,6 +4732,14 @@ static int accel_finish_startup(void)
 					return FAILURE;
 				}
 			}
+#else
+	// Note: in WASIX, there is only one uid; it has "root" access to everything within the
+	// sandbox, but not the base OS, so it's OK to run everything with that user. That is to
+	// say, we shouldn't need to fork a new process here.
+	// It is also a fact that forking doesn't work under WASIX+EH anyway.
+	zend_accel_error(ACCEL_LOG_FATAL, "Preloading cannot fork to spawn a new process in WASIX");
+	exit(1);
+#endif
 		} else {
 			if (ZCG(accel_directives).preload_user
 			 && *ZCG(accel_directives).preload_user) {
