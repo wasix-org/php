@@ -7,6 +7,8 @@ readme = 'README.md'
 # See more keys and definitions at https://docs.wasmer.io/registry/manifest
 
 [dependencies]
+"wasmer/bash" = "=1.0.25"
+"sendmail/sendmail" = "0.1.5"
 
 [[module]]
 name = 'php'
