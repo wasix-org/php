@@ -53,7 +53,7 @@ export \
   CXXFLAGS="-g -flto -O2" \
   LIBS="-L$PHP_WASIX_DEPS/lib-eh --no-wasm-opt" \
   WASIXCC_INCLUDE_CPP_SYMBOLS="yes" \
-  WASIXCC_WASM_EXCEPTIONS="yes" \
+  WASIXCC_WASM_EXCEPTIONS="legacy" \
   PROG_SENDMAIL="/usr/bin/sendmail"
 
 ./buildconf --force
