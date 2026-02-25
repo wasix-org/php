@@ -41,7 +41,7 @@ jobs:
           sudo cp binaryen-version_123/bin/* /usr/bin/
 
       - name: Install wasixcc
-        uses: wasix-org/wasixcc@main
+        uses: wasix-org/wasixcc@0.4.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           sysroot-tag: v2026-02-16.1
@@ -124,7 +124,7 @@ jobs:
           sudo cp binaryen-version_123/bin/* /usr/bin/
 
       - name: Install wasixcc
-        uses: wasix-org/wasixcc@main
+        uses: wasix-org/wasixcc@0.4.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           sysroot-tag: v2026-02-16.1
