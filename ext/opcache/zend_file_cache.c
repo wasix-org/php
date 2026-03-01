@@ -96,9 +96,15 @@ static int zend_file_cache_flock(int fd, int op)
 #elif defined(HAVE_FLOCK)
 # define zend_file_cache_flock flock
 #else
-# define LOCK_SH 0
-# define LOCK_EX 1
-# define LOCK_UN 2
+# ifndef LOCK_SH
+#  define LOCK_SH 0
+# endif
+# ifndef LOCK_EX
+#  define LOCK_EX 1
+# endif
+# ifndef LOCK_UN
+#  define LOCK_UN 2
+# endif
 static int zend_file_cache_flock(int fd, int type)
 {
 	return 0;
