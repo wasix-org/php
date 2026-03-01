@@ -29,6 +29,7 @@
 #include <errno.h>
 #include "ZendAccelerator.h"
 #include "zend_shared_alloc.h"
+#include "zend_atomic.h"
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
@@ -61,6 +62,14 @@ static MUTEX_T zts_lock;
 #endif
 int lock_file = -1;
 static char lockfile_name[MAXPATHLEN];
+#endif
+
+#ifdef __wasi__
+# ifdef ZTS
+static MUTEX_T zend_shared_alloc_wasi_mutex;
+# else
+static zend_atomic_bool zend_shared_alloc_wasi_lock;
+# endif
 #endif
 
 static const zend_shared_memory_handler_entry handler_table[] = {
@@ -181,12 +190,18 @@ int zend_shared_alloc_startup(size_t requested_size, size_t reserved_size)
 	smm_shared_globals = &tmp_shared_globals;
 	ZSMMG(shared_free) = requested_size - reserved_size; /* goes to tmp_shared_globals.shared_free */
 
-#ifndef __wasi__
 #ifndef ZEND_WIN32
+#ifdef __wasi__
+#ifdef ZTS
+	zend_shared_alloc_wasi_mutex = tsrm_mutex_alloc();
+#else
+	ZEND_ATOMIC_BOOL_INIT(&zend_shared_alloc_wasi_lock, false);
+#endif
+#else
 	zend_shared_alloc_create_lock(ZCG(accel_directives).lockfile_path);
+#endif
 #else
 	zend_shared_alloc_create_lock();
-#endif
 #endif
 
 	if (ZCG(accel_directives).memory_model && ZCG(accel_directives).memory_model[0]) {
@@ -325,10 +340,17 @@ void zend_shared_alloc_shutdown(void)
 	ZSMMG(shared_segments) = NULL;
 	g_shared_alloc_handler = NULL;
 #ifndef ZEND_WIN32
-	close(lock_file);
+	if (lock_file >= 0) {
+		close(lock_file);
+		lock_file = -1;
+	}
 
 # ifdef ZTS
+#  ifdef __wasi__
+	tsrm_mutex_free(zend_shared_alloc_wasi_mutex);
+#  else
 	tsrm_mutex_free(zts_lock);
+#  endif
 # endif
 #endif
 }
@@ -481,7 +503,14 @@ void zend_shared_alloc_lock(void)
 
 #ifdef ZEND_WIN32
 	zend_shared_alloc_lock_win32();
-#elif !defined(__wasi__)
+#elif defined(__wasi__)
+#ifdef ZTS
+	tsrm_mutex_lock(zend_shared_alloc_wasi_mutex);
+#else
+	while (zend_atomic_bool_exchange_ex(&zend_shared_alloc_wasi_lock, true)) {
+	}
+#endif
+#else
 	struct flock mem_write_lock;
 
 	mem_write_lock.l_type = F_WRLCK;
@@ -531,7 +560,13 @@ void zend_shared_alloc_unlock(void)
 
 #ifdef ZEND_WIN32
 	zend_shared_alloc_unlock_win32();
-#elif !defined(__wasi__)
+#elif defined(__wasi__)
+#ifdef ZTS
+	tsrm_mutex_unlock(zend_shared_alloc_wasi_mutex);
+#else
+	zend_atomic_bool_store_ex(&zend_shared_alloc_wasi_lock, false);
+#endif
+#else
 	if (fcntl(lock_file, F_SETLK, &mem_write_unlock) == -1) {
 		zend_accel_error_noreturn(ACCEL_LOG_ERROR, "Cannot remove lock - %s (%d)", strerror(errno), errno);
 	}
