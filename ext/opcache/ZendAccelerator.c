@@ -48,6 +48,7 @@
 #include "zend_accelerator_hash.h"
 #include "zend_file_cache.h"
 #include "zend_system_id.h"
+#include "zend_atomic.h"
 #include "ext/pcre/php_pcre.h"
 #include "ext/standard/basic_functions.h"
 
@@ -152,6 +153,12 @@ static void preload_restart(void);
 # define INCREMENT(v) InterlockedIncrement64(&ZCSG(v))
 # define DECREMENT(v) InterlockedDecrement64(&ZCSG(v))
 # define LOCKVAL(v)   (ZCSG(v))
+#elif defined(__wasi__)
+static uint32_t accel_wasi_mem_usage = 0;
+static uint32_t accel_wasi_restart_in = 0;
+# define INCREMENT(v) __atomic_add_fetch(&accel_wasi_##v, 1, __ATOMIC_SEQ_CST)
+# define DECREMENT(v) __atomic_sub_fetch(&accel_wasi_##v, 1, __ATOMIC_SEQ_CST)
+# define LOCKVAL(v)   __atomic_load_n(&accel_wasi_##v, __ATOMIC_SEQ_CST)
 #endif
 
 #define ZCG_KEY_LEN (MAXPATHLEN * 8)
@@ -275,7 +282,7 @@ static ZEND_INI_MH(accel_include_path_on_modify)
 
 static inline void accel_restart_enter(void)
 {
-#ifdef ZEND_WIN32
+#if defined(ZEND_WIN32) || defined(__wasi__)
 	INCREMENT(restart_in);
 #else
 	struct flock restart_in_progress;
@@ -294,7 +301,7 @@ static inline void accel_restart_enter(void)
 
 static inline void accel_restart_leave(void)
 {
-#ifdef ZEND_WIN32
+#if defined(ZEND_WIN32) || defined(__wasi__)
 	ZCSG(restart_in_progress) = false;
 	DECREMENT(restart_in);
 #else
@@ -315,7 +322,9 @@ static inline void accel_restart_leave(void)
 static inline int accel_restart_is_active(void)
 {
 	if (ZCSG(restart_in_progress)) {
-#ifndef ZEND_WIN32
+#if defined(ZEND_WIN32) || defined(__wasi__)
+		return LOCKVAL(restart_in) != 0;
+#elif !defined(__wasi__)
 		struct flock restart_check;
 
 		restart_check.l_type = F_WRLCK;
@@ -343,7 +352,7 @@ static inline int accel_restart_is_active(void)
 /* Creates a read lock for SHM access */
 static inline zend_result accel_activate_add(void)
 {
-#ifdef ZEND_WIN32
+#if defined(ZEND_WIN32) || defined(__wasi__)
 	SHM_UNPROTECT();
 	INCREMENT(mem_usage);
 	SHM_PROTECT();
@@ -366,7 +375,7 @@ static inline zend_result accel_activate_add(void)
 /* Releases a lock for SHM access */
 static inline void accel_deactivate_sub(void)
 {
-#ifdef ZEND_WIN32
+#if defined(ZEND_WIN32) || defined(__wasi__)
 	if (ZCG(counted)) {
 		SHM_UNPROTECT();
 		DECREMENT(mem_usage);
@@ -389,7 +398,7 @@ static inline void accel_deactivate_sub(void)
 
 static inline void accel_unlock_all(void)
 {
-#ifdef ZEND_WIN32
+#if defined(ZEND_WIN32) || defined(__wasi__)
 	accel_deactivate_sub();
 #else
 	if (lock_file == -1) {
@@ -901,7 +910,7 @@ static inline void kill_all_lockers(struct flock *mem_usage_check)
 
 static inline bool accel_is_inactive(void)
 {
-#ifdef ZEND_WIN32
+#if defined(ZEND_WIN32) || defined(__wasi__)
 	/* on Windows, we don't need kill_all_lockers() because SAPIs
 	   that work on Windows don't manage child processes (and we
 	   can't do anything about hanging threads anyway); therefore
@@ -2938,6 +2947,10 @@ static zend_result zend_accel_init_shm(void)
 	ZCSG(start_time) = zend_accel_get_time();
 	ZCSG(last_restart_time) = 0;
 	ZCSG(restart_in_progress) = false;
+#ifdef __wasi__
+	__atomic_store_n(&accel_wasi_mem_usage, 0, __ATOMIC_SEQ_CST);
+	__atomic_store_n(&accel_wasi_restart_in, 0, __ATOMIC_SEQ_CST);
+#endif
 
 	for (i = 0; i < -HT_MIN_MASK; i++) {
 		ZCSG(uninitialized_bucket)[i] = HT_INVALID_IDX;
