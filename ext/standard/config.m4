@@ -322,7 +322,7 @@ dnl
 dnl Check if there is a support means of creating a new process and defining
 dnl which handles it receives
 dnl
-AC_CHECK_FUNCS(fork posix_spawn CreateProcess, [
+AC_CHECK_FUNCS(fork CreateProcess, [
   php_can_support_proc_open=yes
   break
 ],[

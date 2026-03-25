@@ -5439,6 +5439,7 @@ static int accel_finish_startup(void)
 			return SUCCESS;
 		}
 
+#ifndef __wasi__
 		if (geteuid() == 0)
 		{
 			pid_t pid;
@@ -5519,6 +5520,7 @@ static int accel_finish_startup(void)
 				zend_accel_error(ACCEL_LOG_WARNING, "\"opcache.preload_user\" is ignored");
 			}
 		}
+#endif
 
 		sapi_module.activate = NULL;
 		sapi_module.deactivate = NULL;
