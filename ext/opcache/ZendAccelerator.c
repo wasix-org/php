@@ -44,7 +44,6 @@
 #include "zend_accelerator_util_funcs.h"
 #include "zend_accelerator_hash.h"
 #include "zend_file_cache.h"
-#include "zend_atomic.h"
 #include "ext/pcre/php_pcre.h"
 #include "ext/standard/md5.h"
 #include "ext/hash/php_hash.h"
