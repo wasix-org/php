@@ -22,7 +22,6 @@
 #include <errno.h>
 #include "ZendAccelerator.h"
 #include "zend_shared_alloc.h"
-#include "zend_atomic.h"
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
@@ -61,7 +60,8 @@ static char lockfile_name[MAXPATHLEN];
 # ifdef ZTS
 static MUTEX_T zend_shared_alloc_wasi_mutex;
 # else
-static zend_atomic_bool zend_shared_alloc_wasi_lock;
+#  include <stdatomic.h>
+static _Atomic int zend_shared_alloc_wasi_lock;
 # endif
 #endif
 
@@ -175,7 +175,7 @@ int zend_shared_alloc_startup(size_t requested_size, size_t reserved_size)
 #ifdef ZTS
 	zend_shared_alloc_wasi_mutex = tsrm_mutex_alloc();
 #else
-	ZEND_ATOMIC_BOOL_INIT(&zend_shared_alloc_wasi_lock, false);
+	zend_shared_alloc_wasi_lock = 0;
 #endif
 #else
 	zend_shared_alloc_create_lock(ZCG(accel_directives).lockfile_path);
@@ -477,7 +477,7 @@ void zend_shared_alloc_lock(void)
 #ifdef ZTS
 	tsrm_mutex_lock(zend_shared_alloc_wasi_mutex);
 #else
-	while (zend_atomic_bool_exchange_ex(&zend_shared_alloc_wasi_lock, true)) {
+	while (atomic_exchange(&zend_shared_alloc_wasi_lock, 1)) {
 	}
 #endif
 #else
@@ -532,7 +532,7 @@ void zend_shared_alloc_unlock(void)
 #ifdef ZTS
 	tsrm_mutex_unlock(zend_shared_alloc_wasi_mutex);
 #else
-	zend_atomic_bool_store_ex(&zend_shared_alloc_wasi_lock, false);
+	atomic_store(&zend_shared_alloc_wasi_lock, 0);
 #endif
 #else
 	if (fcntl(lock_file, F_SETLK, &mem_write_unlock) == -1) {
