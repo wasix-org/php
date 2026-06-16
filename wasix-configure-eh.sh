@@ -8,6 +8,7 @@ fi
 
 PHP_WASIX_DEPS=${PHP_WASIX_DEPS:-"../php-wasix-deps"}
 WASIX_EXTRA_CONFIGURE_FLAGS=${WASIX_EXTRA_CONFIGURE_FLAGS:-""}
+WASIX_EXTRA_FLAGS=${WASIX_EXTRA_FLAGS:-""}
 
 export \
   CURL_CFLAGS="-I$PHP_WASIX_DEPS/include/curl" \
@@ -49,8 +50,9 @@ export \
   NM="wasixnm" \
   CC="wasixcc" \
   CXX="wasixcc++" \
-  CFLAGS="-g -flto -O2" \
-  CXXFLAGS="-g -flto -O2" \
+  CFLAGS="-g -O2 $WASIX_EXTRA_FLAGS" \
+  CXXFLAGS="-g -O2 $WASIX_EXTRA_FLAGS" \
+  LDFLAGS="-L$PHP_WASIX_DEPS/lib-eh --no-wasm-opt" \
   LIBS="-L$PHP_WASIX_DEPS/lib-eh --no-wasm-opt" \
   WASIXCC_INCLUDE_CPP_SYMBOLS="yes" \
   WASIXCC_WASM_EXCEPTIONS="legacy" \
@@ -58,7 +60,9 @@ export \
 
 ./buildconf --force
 
-./configure --enable-fd-setsize=8192 --enable-static --disable-shared --host=wasm32-wasi --target=wasm32-wasi \
+# Autoconf probes compile tiny test programs; wasixcc workarounds apply there only.
+WASIXCC_AUTOCONF_WORKAROUNDS=yes \
+  ./configure --enable-fd-setsize=8192 --enable-static --disable-shared --host=wasm32-wasi --target=wasm32-wasi \
   --enable-opcache --disable-opcache-jit --disable-huge-code-pages --disable-rpath --disable-cgi --with-zlib \
   --with-openssl --enable-mbstring --enable-mbregex --disable-zend-signals --prefix=/usr/bin \
   --with-valgrind=no --with-pcre-jit=no --with-iconv --disable-huge-code-pages --disable-phpdbg \
