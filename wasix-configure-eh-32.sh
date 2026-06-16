@@ -3,5 +3,6 @@
 set -eu
 
 export WASIX_64BIT_LONG_PATCH=no
+export WASIX_EXTRA_FLAGS="-flto"
 
 ./wasix-configure-eh.sh
