@@ -25,7 +25,7 @@
 #include "php_imagick_shared.h"
 
 #if PHP_VERSION_ID >= 70000
-#include "ext/standard/php_smart_string.h"
+#include "zend_smart_string.h"
 #else
 #include "ext/standard/php_smart_str.h"
 #endif
