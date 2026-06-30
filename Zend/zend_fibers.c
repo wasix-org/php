@@ -253,7 +253,7 @@ static zend_fiber_stack *zend_fiber_stack_allocate(size_t size)
 		return NULL;
 	}
 
-#if defined(MADV_NOHUGEPAGE)
+#if defined(MADV_NOHUGEPAGE) && !defined(__wasi__)
 	/* Multiple reasons to fail, ignore all errors only needed
 	 * for linux < 6.8 */
 	(void) madvise(pointer, alloc_size, MADV_NOHUGEPAGE);
