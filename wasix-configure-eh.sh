@@ -69,6 +69,6 @@ WASIXCC_AUTOCONF_WORKAROUNDS=yes \
   --enable-bcmath --enable-tidy --enable-gd --enable-exif --with-jpeg --with-freetype --with-webp \
   --enable-fiber-asm --with-curl --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd --with-zip --with-sodium \
   --with-pgsql="$PHP_WASIX_DEPS"/pgsql-eh --with-pdo-pgsql="$PHP_WASIX_DEPS"/pgsql-eh --enable-intl \
-  --with-pdo-sqlite --enable-ftp --enable-igbinary --with-imagick \
+  --with-pdo-sqlite --enable-ftp --enable-igbinary --with-imagick --enable-soap \
   $WASIX_EXTRA_CONFIGURE_FLAGS \
   --program-suffix=".wasm"
