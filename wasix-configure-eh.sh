@@ -25,7 +25,7 @@ export \
   ICONV_LIBS="-liconv -lcharset -licrt" \
   ICU_CFLAGS="-I$PHP_WASIX_DEPS/include/icu -std=c11 -DU_DISABLE_VERSION_SUFFIX -DU_DISABLE_RENAMING" \
   ICU_CXXFLAGS="-I$PHP_WASIX_DEPS/include/icu -std=c++17 -DU_DISABLE_VERSION_SUFFIX -DU_DISABLE_RENAMING" \
-  ICU_LIBS="-licudata -licui18n -licuio -licutu -licuuc" \
+  ICU_LIBS="-licudata -licui18n -licuio -licuuc" \
   PNG_CFLAGS="-I$PHP_WASIX_DEPS/include/png" \
   PNG_LIBS="-lpng" \
   JPEG_CFLAGS="-I$PHP_WASIX_DEPS/include/jpeg" \
