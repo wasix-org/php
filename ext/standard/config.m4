@@ -322,7 +322,7 @@ dnl
 dnl Check if there is a support means of creating a new process and defining
 dnl which handles it receives
 dnl
-AC_CHECK_FUNCS(fork CreateProcess, [
+AC_CHECK_FUNCS(fork posix_spawn CreateProcess, [
   php_can_support_proc_open=yes
   break
 ],[
@@ -378,6 +378,8 @@ dnl These are old deprecated functions
 dnl
 
 PHP_CHECK_FUNC(res_search, resolv, bind, socket)
+
+PHP_CHECK_FUNC(posix_spawn_file_actions_addchdir_np)
 
 dnl
 dnl Check for strptime()
