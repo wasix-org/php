@@ -2814,6 +2814,7 @@ static zend_class_entry *zend_accel_inheritance_cache_add(zend_class_entry *ce, 
 	}
 
 	zend_map_ptr_extend(ZCSG(map_ptr_last));
+	zend_accel_pending_ce_cache_begin();
 
 #if ZEND_MM_ALIGNMENT < 8
 	/* Align to 8-byte boundary */
@@ -2864,6 +2865,7 @@ static zend_class_entry *zend_accel_inheritance_cache_add(zend_class_entry *ce, 
 	EG(errors) = NULL;
 
 	ZCSG(map_ptr_last) = CG(map_ptr_last);
+	zend_accel_pending_ce_cache_commit();
 
 	zend_shared_alloc_destroy_xlat_table();
 
@@ -3238,6 +3240,9 @@ zend_result accel_post_deactivate(void)
 		zend_string_release_ex(ZCG(cwd), 0);
 		ZCG(cwd) = NULL;
 	}
+
+	/* A persist window left through a bailout never published its slots */
+	zend_accel_pending_ce_cache_discard();
 
 	if (!ZCG(enabled) || !accel_startup_ok)
 	{
