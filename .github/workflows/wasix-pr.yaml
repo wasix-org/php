@@ -12,6 +12,8 @@ on:
 # Match the toolchain used by PHPix, including the wide-arithmetic LLVM fix.
 env:
   WASIXCC_WASM_EXCEPTIONS: legacy
+  # Configure and build run in separate shells; retain C++ runtime linking.
+  WASIXCC_INCLUDE_CPP_SYMBOLS: "yes"
 
 permissions:
   contents: read
