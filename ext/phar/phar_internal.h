@@ -84,8 +84,13 @@
 #define TAR_FILE    '0'
 #define TAR_LINK    '1'
 #define TAR_SYMLINK '2'
+#define TAR_CHAR    '3'
+#define TAR_BLOCK   '4'
 #define TAR_DIR     '5'
+#define TAR_FIFO    '6'
 #define TAR_NEW     '8'
+#define TAR_LONGLINK 'K'
+#define TAR_LONGNAME 'L'
 #define TAR_GLOBAL_HDR 'g'
 #define TAR_FILE_HDR   'x'
 
@@ -378,6 +383,31 @@ static inline bool phar_validate_alias(const char *alias, size_t alias_len) /* {
 {
 	return !(memchr(alias, '/', alias_len) || memchr(alias, '\\', alias_len) || memchr(alias, ':', alias_len) ||
 		memchr(alias, ';', alias_len) || memchr(alias, '\n', alias_len) || memchr(alias, '\r', alias_len));
+}
+/* }}} */
+
+static inline bool phar_path_is_magic_phar_ex(const char *path, size_t path_len) /* {{{ */
+{
+	if (path_len > 0 && path[0] == '/') {
+		path++;
+		path_len--;
+	}
+
+	if (path_len < sizeof(".phar") - 1 || memcmp(path, ".phar", sizeof(".phar") - 1) != 0) {
+		return false;
+	}
+
+	if (path_len == sizeof(".phar") - 1) {
+		return true;
+	}
+
+	return path[sizeof(".phar") - 1] == '/' || path[sizeof(".phar") - 1] == '\\';
+}
+/* }}} */
+
+static inline bool phar_is_magic_phar(const zend_string *path) /* {{{ */
+{
+	return phar_path_is_magic_phar_ex(ZSTR_VAL(path), ZSTR_LEN(path));
 }
 /* }}} */
 

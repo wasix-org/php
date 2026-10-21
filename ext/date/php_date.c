@@ -1995,12 +1995,22 @@ static HashTable *date_object_get_properties_for(zend_object *object, zend_prop_
 	php_date_obj *dateobj;
 
 	switch (purpose) {
-		case ZEND_PROP_PURPOSE_DEBUG:
 		case ZEND_PROP_PURPOSE_SERIALIZE:
 		case ZEND_PROP_PURPOSE_VAR_EXPORT:
 		case ZEND_PROP_PURPOSE_JSON:
 		case ZEND_PROP_PURPOSE_ARRAY_CAST:
 			break;
+		case ZEND_PROP_PURPOSE_DEBUG: {
+			if (object->ce->__debugInfo) {
+				int is_temp = 0;
+				HashTable *ht = zend_std_get_debug_info(object, &is_temp);
+				if (ht && !is_temp) {
+					GC_TRY_ADDREF(ht);
+				}
+				return ht;
+			}
+			break;
+		}
 		default:
 			return zend_std_get_properties_for(object, purpose);
 	}
@@ -2117,12 +2127,22 @@ static HashTable *date_object_get_properties_for_timezone(zend_object *object, z
 	php_timezone_obj *tzobj;
 
 	switch (purpose) {
-		case ZEND_PROP_PURPOSE_DEBUG:
 		case ZEND_PROP_PURPOSE_SERIALIZE:
 		case ZEND_PROP_PURPOSE_VAR_EXPORT:
 		case ZEND_PROP_PURPOSE_JSON:
 		case ZEND_PROP_PURPOSE_ARRAY_CAST:
 			break;
+		case ZEND_PROP_PURPOSE_DEBUG: {
+			if (object->ce->__debugInfo) {
+				int is_temp = 0;
+				HashTable *ht = zend_std_get_debug_info(object, &is_temp);
+				if (ht && !is_temp) {
+					GC_TRY_ADDREF(ht);
+				}
+				return ht;
+			}
+			break;
+		}
 		default:
 			return zend_std_get_properties_for(object, purpose);
 	}
@@ -5125,7 +5145,7 @@ static bool date_period_init_iso8601_string(php_period_obj *dpobj, zend_class_en
 		zend_string_release(func);
 		return false;
 	}
-	if (dpobj->end == NULL && recurrences == 0) {
+	if (dpobj->end == NULL && *recurrences == 0) {
 		zend_string *func = get_active_function_or_method_name();
 		zend_throw_exception_ex(date_ce_date_malformed_period_string_exception, 0, "%s(): ISO interval must contain an end date or a recurrence count, \"%s\" given", ZSTR_VAL(func), isostr);
 		zend_string_release(func);
@@ -5206,6 +5226,23 @@ PHP_METHOD(DatePeriod, createFromISO8601String)
 	}
 }
 
+static void date_period_reset(php_period_obj *period_obj)
+{
+	if (period_obj->start) {
+		timelib_time_dtor(period_obj->start);
+	}
+	if (period_obj->current) {
+		timelib_time_dtor(period_obj->current);
+	}
+	if (period_obj->end) {
+		timelib_time_dtor(period_obj->end);
+	}
+	if (period_obj->interval) {
+		timelib_rel_time_dtor(period_obj->interval);
+	}
+	memset(period_obj, 0, XtOffsetOf(php_period_obj, std));
+}
+
 /* {{{ Creates new DatePeriod object. */
 PHP_METHOD(DatePeriod, __construct)
 {
@@ -5227,7 +5264,7 @@ PHP_METHOD(DatePeriod, __construct)
 	}
 
 	dpobj = Z_PHPPERIOD_P(ZEND_THIS);
-	dpobj->current = NULL;
+	date_period_reset(dpobj);
 
 	if (isostr) {
 		zend_error(E_DEPRECATED, "Calling DatePeriod::__construct(string $isostr, int $options = 0) is deprecated, "
@@ -5245,6 +5282,7 @@ PHP_METHOD(DatePeriod, __construct)
 		if (end) {
 			DATE_CHECK_INITIALIZED(Z_PHPDATE_P(end)->time, date_ce_interface);
 		}
+		DATE_CHECK_INITIALIZED(Z_PHPINTERVAL_P(interval)->initialized, Z_OBJCE_P(interval));
 
 		/* init */
 		php_interval_obj *intobj = Z_PHPINTERVAL_P(interval);
