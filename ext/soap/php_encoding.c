@@ -552,7 +552,12 @@ static zval *master_to_zval_int(zval *ret, encodePtr encode, xmlNodePtr data)
 		}
 	}
 	if (encode->to_zval) {
+		if (SOAP_GLOBAL(decode_depth) >= SOAP_MAX_DECODE_DEPTH) {
+			soap_error0(E_ERROR, "Encoding: Nesting level too deep");
+		}
+		SOAP_GLOBAL(decode_depth)++;
 		ret = encode->to_zval(ret, &encode->details, data);
+		SOAP_GLOBAL(decode_depth)--;
 	}
 	return ret;
 }
@@ -2626,6 +2631,11 @@ static zval *to_zval_array(zval *ret, encodeTypePtr type, xmlNodePtr data)
 					ar = zend_hash_index_update(Z_ARRVAL_P(ar), pos[i], &tmpAr);
 				}
 				i++;
+				if (ZEND_HAS_OOM()) {
+					zval_ptr_dtor(ret);
+					ZVAL_NULL(ret);
+					goto ret;
+				}
 			}
 			zend_hash_index_update(Z_ARRVAL_P(ar), pos[i], &tmpVal);
 
@@ -2647,6 +2657,8 @@ static zval *to_zval_array(zval *ret, encodeTypePtr type, xmlNodePtr data)
 		}
 		trav = trav->next;
 	}
+
+ret:;
 	efree(dims);
 	efree(pos);
 	return ret;
@@ -3444,6 +3456,7 @@ void encode_reset_ns()
 {
 	SOAP_GLOBAL(cur_uniq_ns) = 0;
 	SOAP_GLOBAL(cur_uniq_ref) = 0;
+	SOAP_GLOBAL(decode_depth) = 0;
 	if (SOAP_GLOBAL(ref_map)) {
 		zend_hash_destroy(SOAP_GLOBAL(ref_map));
 	} else {
@@ -3456,6 +3469,7 @@ void encode_finish()
 {
 	SOAP_GLOBAL(cur_uniq_ns) = 0;
 	SOAP_GLOBAL(cur_uniq_ref) = 0;
+	SOAP_GLOBAL(decode_depth) = 0;
 	if (SOAP_GLOBAL(ref_map)) {
 		zend_hash_destroy(SOAP_GLOBAL(ref_map));
 		efree(SOAP_GLOBAL(ref_map));
