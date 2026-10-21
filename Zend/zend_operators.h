@@ -148,6 +148,7 @@ static zend_always_inline zend_long zend_dval_to_lval_silent(double d)
 /* Used to convert a string float to integer during an (int) cast */
 static zend_always_inline zend_long zend_dval_to_lval_cap(double d, const zend_string *s)
 {
+	ZEND_IGNORE_VALUE(s);
 	if (UNEXPECTED(!zend_finite(d))) {
 		return 0;
 	} else if (!ZEND_DOUBLE_FITS_LONG(d)) {
@@ -492,11 +493,17 @@ ZEND_API char*        ZEND_FASTCALL zend_str_toupper_dup_ex(const char *source, 
 ZEND_API zend_string* ZEND_FASTCALL zend_string_tolower_ex(zend_string *str, bool persistent);
 ZEND_API zend_string* ZEND_FASTCALL zend_string_toupper_ex(zend_string *str, bool persistent);
 
+ZEND_API zend_string* ZEND_FASTCALL zend_string_ftolower_ex(zend_string *str, bool persistent);
+
 static zend_always_inline zend_string* zend_string_tolower(zend_string *str) {
 	return zend_string_tolower_ex(str, false);
 }
 static zend_always_inline zend_string* zend_string_toupper(zend_string *str) {
 	return zend_string_toupper_ex(str, false);
+}
+
+static zend_always_inline zend_string* zend_string_ftolower(zend_string *str) {
+	return zend_string_ftolower_ex(str, false);
 }
 
 ZEND_API int ZEND_FASTCALL zend_binary_zval_strcmp(zval *s1, zval *s2);

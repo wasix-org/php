@@ -957,6 +957,7 @@ static bool snmp_session_init(php_snmp_session **session_p, int version, zend_st
 
 	if (strlen(session->peername) == 0) {
 		php_error_docref(NULL, E_WARNING, "Unknown failure while resolving '%s'", ZSTR_VAL(hostname));
+		php_network_freeaddresses(psal);
 		return false;
 	}
 	/* XXX FIXME
@@ -1129,7 +1130,8 @@ static bool snmp_session_set_contextEngineID(struct snmp_session *s, zend_string
 	size_t	ebuf_len = 32, eout_len = 0;
 	uint8_t	*ebuf = (uint8_t *) emalloc(ebuf_len);
 
-	if (!snmp_hex_to_binary(&ebuf, &ebuf_len, &eout_len, 1, ZSTR_VAL(contextEngineID))) {
+	/* Disallow reallocation: ebuf comes from emalloc() and net-snmp would realloc() it. */
+	if (!snmp_hex_to_binary(&ebuf, &ebuf_len, &eout_len, 0, ZSTR_VAL(contextEngineID))) {
 		// TODO Promote to Error?
 		php_error_docref(NULL, E_WARNING, "Bad engine ID value '%s'", ZSTR_VAL(contextEngineID));
 		efree(ebuf);

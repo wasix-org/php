@@ -116,7 +116,7 @@ ZEND_API void zend_objects_destroy_object(zend_object *object)
 	zend_function *destructor = object->ce->destructor;
 
 	if (destructor) {
-		if (UNEXPECTED(zend_object_is_lazy(object))) {
+		if (UNEXPECTED(zend_object_is_lazy(object) || ZEND_HAS_OOM())) {
 			return;
 		}
 
@@ -191,6 +191,18 @@ ZEND_API zend_object* ZEND_FASTCALL zend_objects_new(zend_class_entry *ce)
 	zend_object *object = emalloc(sizeof(zend_object) + zend_object_properties_size(ce));
 
 	_zend_object_std_init(object, ce);
+	return object;
+}
+
+ZEND_API zend_object* ZEND_FASTCALL zend_objects_fnew(zend_class_entry *ce)
+{
+	zend_object *object = femalloc(sizeof(zend_object) + zend_object_properties_size(ce), /* fallible */ true);
+	if (UNEXPECTED(!object)) {
+		return NULL;
+	}
+
+	_zend_object_std_init(object, ce);
+	object->handlers = &std_object_handlers;
 	return object;
 }
 
@@ -322,6 +334,14 @@ ZEND_API zend_object *zend_objects_clone_obj_with(zend_object *old_object, const
 		} ZEND_HASH_FOREACH_END();
 
 		EG(fake_scope) = old_scope;
+
+		/* Lock readonly properties once more. */
+		if (ZEND_CLASS_HAS_READONLY_PROPS(new_object->ce)) {
+			for (uint32_t i = 0; i < new_object->ce->default_properties_count; i++) {
+				zval* prop = OBJ_PROP_NUM(new_object, i);
+				Z_PROP_FLAG_P(prop) &= ~IS_PROP_REINITABLE;
+			}
+		}
 	}
 
 	return new_object;

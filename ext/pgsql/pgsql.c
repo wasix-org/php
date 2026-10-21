@@ -922,7 +922,6 @@ PHP_FUNCTION(pg_close)
 #define PHP_PG_HOST 6
 #define PHP_PG_VERSION 7
 #define PHP_PG_JIT 8
-#define PHP_PG_SERVICE 9
 
 /* php_pgsql_get_link_info */
 static void php_pgsql_get_link_info(INTERNAL_FUNCTION_PARAMETERS, int entry_type)
@@ -1007,12 +1006,6 @@ static void php_pgsql_get_link_info(INTERNAL_FUNCTION_PARAMETERS, int entry_type
 			PQclear(res);
 			return;
 		}
-#if defined(HAVE_PG_SERVICE)
-		case PHP_PG_SERVICE: {
-			result = PQservice(pgsql);
-			break;
-		}
-#endif
 		EMPTY_SWITCH_DEFAULT_CASE()
 	}
 	if (result) {
@@ -1068,13 +1061,6 @@ PHP_FUNCTION(pg_jit)
 {
 	php_pgsql_get_link_info(INTERNAL_FUNCTION_PARAM_PASSTHRU,PHP_PG_JIT);
 }
-
-#if defined(HAVE_PG_SERVICE)
-PHP_FUNCTION(pg_service)
-{
-	php_pgsql_get_link_info(INTERNAL_FUNCTION_PARAM_PASSTHRU,PHP_PG_SERVICE);
-}
-#endif
 
 /* Returns the value of a server parameter */
 PHP_FUNCTION(pg_parameter_status)
@@ -2808,7 +2794,7 @@ PHP_FUNCTION(pg_lo_write)
 
 	ZEND_PARSE_PARAMETERS_START(2, 3)
 		Z_PARAM_OBJECT_OF_CLASS(pgsql_id, pgsql_lob_ce)
-		Z_PARAM_PATH_STR(str)
+		Z_PARAM_STR(str)
 		Z_PARAM_OPTIONAL
 		Z_PARAM_LONG_OR_NULL(z_len, z_len_is_null)
 	ZEND_PARSE_PARAMETERS_END();
@@ -4890,7 +4876,7 @@ static int php_pgsql_convert_match(const zend_string *str, zend_string *regex)
  */
 static zend_string *php_pgsql_add_quotes(zend_string *src)
 {
-	return zend_string_concat3("E'", strlen("E'"), ZSTR_VAL(src), ZSTR_LEN(src), "'", strlen("'"));
+	return zend_string_concat3("'", strlen("'"), ZSTR_VAL(src), ZSTR_LEN(src), "'", strlen("'"));
 }
 /* }}} */
 
@@ -5161,7 +5147,6 @@ PHP_PGSQL_API zend_result php_pgsql_convert(PGconn *pg_link, const zend_string *
 							zend_string *str;
 							/* PostgreSQL ignores \0 */
 							str = zend_string_alloc(Z_STRLEN_P(val) * 2, 0);
-							/* better to use PGSQLescapeLiteral since PGescapeStringConn does not handle special \ */
 							ZSTR_LEN(str) = PQescapeStringConn(pg_link, ZSTR_VAL(str),
 									Z_STRVAL_P(val), Z_STRLEN_P(val), &escape_err);
 							if (escape_err) {

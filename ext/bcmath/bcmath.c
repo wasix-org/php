@@ -157,6 +157,16 @@ static zend_always_inline zend_result bcmath_check_scale(zend_long scale, uint32
 	return SUCCESS;
 }
 
+static zend_result bcmath_check_precision(zend_long precision, uint32_t arg_num)
+{
+	if (ZEND_LONG_INT_OVFL(precision)) {
+		zend_argument_value_error(arg_num, "must be between " ZEND_LONG_FMT " and %d",
+			(zend_long) ZEND_LONG_MIN, INT_MAX);
+		return FAILURE;
+	}
+	return SUCCESS;
+}
+
 static void php_long2num(bc_num *num, zend_long lval)
 {
 	*num = bc_long2num(lval);
@@ -798,6 +808,10 @@ PHP_FUNCTION(bcround)
 		Z_PARAM_OBJ_OF_CLASS(mode_object, rounding_mode_ce)
 	ZEND_PARSE_PARAMETERS_END();
 
+	if (bcmath_check_precision(precision, 2) == FAILURE) {
+		RETURN_THROWS();
+	}
+
 	if (mode_object != NULL) {
 		mode = php_math_round_mode_from_enum(mode_object);
 	}
@@ -1054,6 +1068,9 @@ static zend_always_inline void bcmath_number_add_internal(
 	}
 	*ret = bc_add(n1, n2, *scale);
 	(*ret)->n_scale = MIN(*scale, (*ret)->n_scale);
+	if (bc_is_zero(*ret)) {
+		(*ret)->n_sign = PLUS;
+	}
 	bc_rm_trailing_zeros(*ret);
 }
 
@@ -1066,6 +1083,9 @@ static zend_always_inline void bcmath_number_sub_internal(
 	}
 	*ret = bc_sub(n1, n2, *scale);
 	(*ret)->n_scale = MIN(*scale, (*ret)->n_scale);
+	if (bc_is_zero(*ret)) {
+		(*ret)->n_sign = PLUS;
+	}
 	bc_rm_trailing_zeros(*ret);
 }
 
@@ -1082,6 +1102,9 @@ static zend_always_inline zend_result bcmath_number_mul_internal(
 	}
 	*ret = bc_multiply(n1, n2, *scale);
 	(*ret)->n_scale = MIN(*scale, (*ret)->n_scale);
+	if (bc_is_zero(*ret)) {
+		(*ret)->n_sign = PLUS;
+	}
 	bc_rm_trailing_zeros(*ret);
 	return SUCCESS;
 }
@@ -1804,6 +1827,10 @@ PHP_METHOD(BcMath_Number, round)
 		Z_PARAM_LONG(precision);
 		Z_PARAM_OBJ_OF_CLASS(mode_object, rounding_mode_ce);
 	ZEND_PARSE_PARAMETERS_END();
+
+	if (bcmath_check_precision(precision, 1) == FAILURE) {
+		RETURN_THROWS();
+	}
 
 	if (mode_object != NULL) {
 		rounding_mode = php_math_round_mode_from_enum(mode_object);

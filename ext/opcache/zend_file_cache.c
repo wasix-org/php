@@ -1309,7 +1309,9 @@ static void zend_file_cache_unserialize_ast(zend_ast                *ast,
 		zend_ast_get_op_array(ast)->op_array = Z_PTR(z);
 	} else if (ast->kind == ZEND_AST_CALLABLE_CONVERT) {
 		zend_ast_fcc *fcc = (zend_ast_fcc*)ast;
-		ZEND_MAP_PTR_NEW(fcc->fptr);
+		if (!script->corrupted) {
+			ZEND_MAP_PTR_NEW(fcc->fptr);
+		}
 	} else if (zend_ast_is_decl(ast)) {
 		/* Not implemented. */
 		ZEND_UNREACHABLE();
@@ -1914,6 +1916,7 @@ zend_persistent_script *zend_file_cache_script_load_ex(zend_file_handle *file_ha
 	bool cache_it = true;
 	unsigned int actual_checksum;
 	bool ok;
+	size_t orig_map_ptr_last = 0;
 
 	if (!full_path) {
 		return NULL;
@@ -2065,6 +2068,8 @@ zend_persistent_script *zend_file_cache_script_load_ex(zend_file_handle *file_ha
 		}
 		memcpy(buf, mem, info.mem_size);
 		zend_map_ptr_extend(ZCSG(map_ptr_last));
+		orig_map_ptr_last = CG(map_ptr_last);
+		zend_accel_pending_ce_cache_begin();
 	} else {
 use_process_mem:
 		buf = mem;
@@ -2083,6 +2088,10 @@ use_process_mem:
 	} zend_end_try();
 	if (!ok) {
 		if (cache_it) {
+			/* The slots allocated by the failed unserialization are referenced
+			 * only by the abandoned buffer, so they can be reclaimed. */
+			zend_accel_pending_ce_cache_discard();
+			CG(map_ptr_last) = orig_map_ptr_last;
 			zend_shared_alloc_unlock();
 			goto use_process_mem;
 		} else {
@@ -2096,6 +2105,7 @@ use_process_mem:
 
 	if (cache_it) {
 		ZCSG(map_ptr_last) = CG(map_ptr_last);
+		zend_accel_pending_ce_cache_commit();
 		script->dynamic_members.last_used = ZCG(request_time);
 
 		zend_accel_hash_update(&ZCSG(hash), script->script.filename, 0, script);
@@ -2115,7 +2125,7 @@ void zend_file_cache_invalidate(zend_string *full_path)
 	if (ZCG(accel_directives).file_cache_read_only) {
 		return;
 	}
-	
+
 	char *filename;
 
 	filename = zend_file_cache_get_bin_file_path(full_path);

@@ -65,6 +65,7 @@ extern zend_module_entry dom_module_entry;
 
 typedef struct dom_xpath_object {
 	php_dom_xpath_callbacks xpath_callbacks;
+	uint32_t evaluation_depth;
 	bool register_node_ns;
 	dom_object dom;
 } dom_xpath_object;
@@ -163,6 +164,12 @@ void dom_set_document_ref_pointers_attr(xmlAttrPtr attr, php_libxml_ref_obj *doc
 
 /* Prop getters by offset */
 zval *dom_get_prop_checked_offset(dom_object *obj, uint32_t offset, const char *name);
+/* Temporarily materialize namespace declarations as nsDef entries on the tree so
+ * that libxml's native validators/canonicalizers can resolve prefixed QNames that
+ * appear in element/attribute *content*. Modern DOM keeps declarations off the
+ * tree (node->nsDef == NULL), which xmlSearchNs() cannot follow. Internal only. */
+void dom_relink_ns_decls(HashTable *links, xmlNodePtr root);
+void dom_unlink_ns_decls(HashTable *links);
 zval *dom_element_class_list_zval(dom_object *obj);
 zval *dom_parent_node_children(dom_object *obj);
 

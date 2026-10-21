@@ -147,6 +147,11 @@ static uint32_t zend_jit_trace_get_exit_point(const zend_op *to_opline, uint32_t
 	}
 	if (JIT_G(current_frame)) {
 		op_array = &JIT_G(current_frame)->func->op_array;
+		if (!(op_array->fn_flags & ZEND_ACC_IMMUTABLE)) {
+			zend_jit_op_array_trace_extension *jit_extension =
+				(zend_jit_op_array_trace_extension*)ZEND_FUNC_INFO(op_array);
+			op_array = jit_extension->op_array;
+		}
 		stack_size = op_array->last_var + op_array->T;
 		if (stack_size) {
 			stack = JIT_G(current_frame)->stack;
@@ -330,6 +335,14 @@ static int zend_jit_trace_may_exit(const zend_op_array *op_array, const zend_op 
 			// TODO: recompilation may change target ???
 			return 0;
 #endif
+		case ZEND_FETCH_OBJ_R:
+			if (opline->op2_type == IS_CONST) {
+				const zend_class_entry *ce = opline->op1_type == IS_UNUSED ? op_array->scope : NULL;
+				if (!ce || !(ce->ce_flags & ZEND_ACC_FINAL) || ce->num_hooked_props > 0) {
+					return 1;
+				}
+			}
+			break;
 		case ZEND_RETURN_BY_REF:
 		case ZEND_RETURN:
 			/* return */
@@ -3558,6 +3571,8 @@ static int zend_jit_trace_deoptimization(
 				}
 			}
 		} else if (STACK_FLAGS(parent_stack, i) == ZREG_TYPE_ONLY) {
+			ZEND_ASSERT(reg == ZREG_NONE);
+
 			uint8_t type = STACK_TYPE(parent_stack, i);
 
 			if (!zend_jit_store_type(jit, i, type)) {
@@ -6456,21 +6471,29 @@ static zend_vm_opcode_handler_t zend_jit_trace(zend_jit_trace_rec *trace_buffer,
 						}
 						goto done;
 					case ZEND_FRAMELESS_ICALL_0:
-						jit_frameless_icall0(jit, opline);
+						if (!jit_frameless_icall0(jit, opline)) {
+							goto jit_failure;
+						}
 						goto done;
 					case ZEND_FRAMELESS_ICALL_1:
 						op1_info = OP1_INFO();
-						jit_frameless_icall1(jit, opline, op1_info);
+						if (!jit_frameless_icall1(jit, opline, op1_info)) {
+							goto jit_failure;
+						}
 						goto done;
 					case ZEND_FRAMELESS_ICALL_2:
 						op1_info = OP1_INFO();
 						op2_info = OP2_INFO();
-						jit_frameless_icall2(jit, opline, op1_info, op2_info);
+						if (!jit_frameless_icall2(jit, opline, op1_info, op2_info)) {
+							goto jit_failure;
+						}
 						goto done;
 					case ZEND_FRAMELESS_ICALL_3:
 						op1_info = OP1_INFO();
 						op2_info = OP2_INFO();
-						jit_frameless_icall3(jit, opline, op1_info, op2_info, OP1_DATA_INFO());
+						if (!jit_frameless_icall3(jit, opline, op1_info, op2_info, OP1_DATA_INFO())) {
+							goto jit_failure;
+						}
 						goto done;
 					default:
 						break;
@@ -7436,7 +7459,7 @@ static zend_vm_opcode_handler_t zend_jit_trace_exit_to_vm(uint32_t trace_num, ui
 
 	name = zend_jit_trace_escape_name(trace_num, exit_num);
 
-	if (!zend_jit_deoptimizer_start(&ctx, name, trace_num, exit_num)) {
+	if (!zend_jit_deoptimizer_start(&ctx, name, trace_num, &zend_jit_traces[trace_num], exit_num)) {
 		zend_string_release(name);
 		return NULL;
 	}
@@ -8706,10 +8729,13 @@ int ZEND_FASTCALL zend_jit_trace_exit(uint32_t exit_num, zend_jit_registers_buf 
 				const zend_op *op = t->exit_info[exit_num].opline;
 				ZEND_ASSERT(op);
 				op--;
-				if (op->opcode == ZEND_FETCH_DIM_IS || op->opcode == ZEND_FETCH_OBJ_IS) {
+				if (op->opcode == ZEND_FETCH_DIM_IS) {
+					ZVAL_NULL(EX_VAR_NUM(i));
+				} else if (op->opcode == ZEND_FETCH_OBJ_IS
+				 && (Z_PROP_FLAG_P(val) & (IS_PROP_LAZY|IS_PROP_UNINIT)) == IS_PROP_UNINIT) {
 					ZVAL_NULL(EX_VAR_NUM(i));
 				} else {
-					ZEND_ASSERT(op->opcode == ZEND_FETCH_DIM_R || op->opcode == ZEND_FETCH_LIST_R || op->opcode == ZEND_FETCH_OBJ_R || op->opcode == ZEND_FETCH_DIM_FUNC_ARG || op->opcode == ZEND_FETCH_OBJ_FUNC_ARG);
+					ZEND_ASSERT(op->opcode == ZEND_FETCH_DIM_R || op->opcode == ZEND_FETCH_LIST_R || op->opcode == ZEND_FETCH_OBJ_R || op->opcode == ZEND_FETCH_OBJ_IS || op->opcode == ZEND_FETCH_DIM_FUNC_ARG || op->opcode == ZEND_FETCH_OBJ_FUNC_ARG);
 					repeat_last_opline = 1;
 				}
 			} else {

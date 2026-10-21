@@ -34,6 +34,7 @@
 #include "zend_enum.h"
 #include "zend_object_handlers.h"
 #include "zend_observer.h"
+#include "zend_system_id.h"
 
 #include <stdarg.h>
 
@@ -537,6 +538,9 @@ ZEND_API bool ZEND_FASTCALL zend_parse_arg_bool_weak(const zval *arg, bool *dest
 			return 0;
 		}
 		*dest = zend_is_true(arg);
+		if (UNEXPECTED(EG(exception))) {
+			return 0;
+		}
 	} else {
 		return 0;
 	}
@@ -762,6 +766,9 @@ ZEND_API bool ZEND_FASTCALL zend_parse_arg_str_weak(zval *arg, zend_string **des
 			return 0;
 		}
 		convert_to_string(arg);
+		if (UNEXPECTED(EG(exception))) {
+			return 0;
+		}
 		*dest = Z_STR_P(arg);
 	} else if (UNEXPECTED(Z_TYPE_P(arg) == IS_OBJECT)) {
 		zend_object *zobj = Z_OBJ_P(arg);
@@ -1944,6 +1951,18 @@ ZEND_API void object_init(zval *arg) /* {{{ */
 }
 /* }}} */
 
+ZEND_API bool object_finit(zval *arg)
+{
+	zend_object *obj = zend_objects_fnew(zend_standard_class_def);
+
+	if (UNEXPECTED(obj == NULL)) {
+		ZVAL_NULL(arg);
+		return false;
+	}
+	ZVAL_OBJ(arg, obj);
+	return true;
+}
+
 ZEND_API void add_assoc_long_ex(zval *arg, const char *key, size_t key_len, zend_long n) /* {{{ */
 {
 	zval tmp;
@@ -2257,6 +2276,9 @@ ZEND_API zend_result array_set_zval_key(HashTable *ht, zval *key, zval *value) /
 			break;
 		case IS_RESOURCE:
 			zend_use_resource_as_offset(key);
+			if (UNEXPECTED(EG(exception))) {
+				return FAILURE;
+			}
 			result = zend_hash_index_update(ht, Z_RES_HANDLE_P(key), value);
 			break;
 		case IS_FALSE:
@@ -2268,9 +2290,14 @@ ZEND_API zend_result array_set_zval_key(HashTable *ht, zval *key, zval *value) /
 		case IS_LONG:
 			result = zend_hash_index_update(ht, Z_LVAL_P(key), value);
 			break;
-		case IS_DOUBLE:
-			result = zend_hash_index_update(ht, zend_dval_to_lval_safe(Z_DVAL_P(key)), value);
+		case IS_DOUBLE: {
+			zend_long lval = zend_dval_to_lval_safe(Z_DVAL_P(key));
+			if (UNEXPECTED(EG(exception))) {
+				return FAILURE;
+			}
+			result = zend_hash_index_update(ht, lval, value);
 			break;
+		}
 		case IS_NULL:
 			zend_error(E_DEPRECATED, "Using null as an array offset is deprecated, use an empty string instead");
 			if (UNEXPECTED(EG(exception))) {
@@ -2998,7 +3025,11 @@ ZEND_API zend_result zend_register_functions(zend_class_entry *scope, const zend
 		internal_function->prototype = NULL;
 		internal_function->prop_info = NULL;
 		internal_function->attributes = NULL;
-		internal_function->frameless_function_infos = ptr->frameless_function_infos;
+		if (type == MODULE_TEMPORARY) {
+			internal_function->frameless_function_infos = NULL;
+		} else {
+			internal_function->frameless_function_infos = ptr->frameless_function_infos;
+		}
 		if (EG(active)) { // at run-time: this ought to only happen if registered with dl() or somehow temporarily at runtime
 			ZEND_MAP_PTR_INIT(internal_function->run_time_cache, zend_arena_calloc(&CG(arena), 1, zend_internal_run_time_cache_reserved_size()));
 		} else {
@@ -3121,6 +3152,7 @@ ZEND_API zend_result zend_register_functions(zend_class_entry *scope, const zend
 				}
 				zend_flf_handlers[zend_flf_count] = flf_info->handler;
 				zend_flf_functions[zend_flf_count] = (zend_function *)reg_function;
+				zend_add_system_entropy("frameless", ZSTR_VAL(reg_function->function_name), &flf_info->num_args, sizeof(flf_info->num_args));
 				zend_flf_count++;
 				flf_info++;
 			}

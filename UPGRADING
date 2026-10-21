@@ -433,8 +433,8 @@ PHP 8.5 UPGRADE NOTES
   . The finfo_close() function has been deprecated.
     As finfo objects are freed automatically.
     RFC: https://wiki.php.net/rfc/deprecations_php_8_5#deprecate_finfo_close
-  . The $context parameter of the finfo_buffer() function has been deprecated
-    as it is ignored.
+  . The $context parameter of the finfo_buffer() and finfo::buffer() functions
+    has been deprecated as it is ignored.
     RFC: https://wiki.php.net/rfc/deprecations_php_8_5#deprecate_the_context_parameter_for_finfo_buffer
 
 - GD:
@@ -596,6 +596,10 @@ PHP 8.5 UPGRADE NOTES
 ========================================
 5. Changed Functions
 ========================================
+
+- BCMath:
+  . bcround() and BcMath\Number::round() now throw a ValueError when the precision
+    argument is out of range.
 
 - Intl:
   . IntlDateFormatter::setTimeZone()/datefmt_set_timezone()
@@ -778,7 +782,6 @@ PHP 8.5 UPGRADE NOTES
   . pg_close_stmt offers an alternative way to close a prepared
     statement from the DEALLOCATE sql command in that we can reuse
     its name afterwards.
-  . pg_service returns the ongoing service name of the connection.
 
 - Reflection:
   . ReflectionConstant::getFileName() was introduced.
@@ -846,6 +849,8 @@ PHP 8.5 UPGRADE NOTES
     indicates more accurately which call site caused what error.
     Moreover, some ext/date exceptions have been wrapped inside a
     IntlException now.
+  . IntlListFormatter::getErrorCode() and getErrorMessage() now reflect
+    IntlListFormatter::format() failures.
 
 - Lexbor:
   . An always enabled lexbor extension is added. It contains the lexbor

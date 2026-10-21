@@ -272,6 +272,7 @@ static const builtin_type_info builtin_types[] = {
 	{ZEND_STRL("iterable"), IS_ITERABLE},
 	{ZEND_STRL("object"), IS_OBJECT},
 	{ZEND_STRL("mixed"), IS_MIXED},
+	{ZEND_STRL("static"), IS_STATIC},
 	{NULL, 0, IS_UNDEF}
 };
 
@@ -464,6 +465,7 @@ void init_compiler(void) /* {{{ */
 	CG(delayed_autoloads) = NULL;
 	CG(unlinked_uses) = NULL;
 	CG(current_linking_class) = NULL;
+	CG(interned_strings_fallible) = false;
 }
 /* }}} */
 
@@ -7100,6 +7102,8 @@ static zend_type zend_compile_single_typename(zend_ast *ast)
 					ZSTR_VAL(zend_string_tolower(type_name)));
 			}
 
+			ZEND_ASSERT(type_code != IS_STATIC && "unqualified static type should have been handled by ZEND_AST_TYPE branch");
+
 			/* Transform iterable into a type union alias */
 			if (type_code == IS_ITERABLE) {
 				/* Set iterable bit for BC compat during Reflection and string representation of type */
@@ -11513,7 +11517,6 @@ static void zend_compile_const_expr_fcc(zend_ast **ast_ptr)
 	if ((*args_ast)->kind != ZEND_AST_CALLABLE_CONVERT) {
 		zend_error_noreturn(E_COMPILE_ERROR, "Constant expression contains invalid operations");
 	}
-	ZEND_MAP_PTR_NEW(((zend_ast_fcc *)*args_ast)->fptr);
 
 	switch ((*ast_ptr)->kind) {
 		case ZEND_AST_CALL: {

@@ -455,6 +455,7 @@ static void php_soap_init_globals(zend_soap_globals *soap_globals)
 	soap_globals->soap_version = SOAP_1_1;
 	soap_globals->mem_cache = NULL;
 	soap_globals->ref_map = NULL;
+	soap_globals->decode_depth = 0;
 }
 
 PHP_MSHUTDOWN_FUNCTION(soap)
@@ -1393,10 +1394,10 @@ PHP_METHOD(SoapServer, handle)
 						return;
 					}
 				}
-			}
 
-			if ((soap_action_z = zend_hash_str_find(Z_ARRVAL_P(server_vars), ZEND_STRL("HTTP_SOAPACTION"))) != NULL && Z_TYPE_P(soap_action_z) == IS_STRING) {
-				soap_action = Z_STRVAL_P(soap_action_z);
+			    if ((soap_action_z = zend_hash_str_find(Z_ARRVAL_P(server_vars), ZEND_STRL("HTTP_SOAPACTION"))) != NULL && Z_TYPE_P(soap_action_z) == IS_STRING && Z_STRLEN_P(soap_action_z) > 0) {
+				    soap_action = Z_STRVAL_P(soap_action_z);
+			    }
 			}
 
 			doc_request = soap_xmlParseFile("php://input");
@@ -1491,7 +1492,11 @@ PHP_METHOD(SoapServer, handle)
 
 		/* If new session or something weird happned */
 		if (soap_obj == NULL) {
-			object_init_ex(&tmp_soap, service->soap_class.ce);
+			if (UNEXPECTED(object_init_ex(&tmp_soap, service->soap_class.ce) != SUCCESS)) {
+				php_output_discard();
+				_soap_server_exception(service, function, ZEND_THIS);
+				goto fail;
+			}
 
 			/* Call constructor */
 			if (service->soap_class.ce->constructor) {
@@ -1851,7 +1856,10 @@ static void soap_server_fault_ex(sdlFunctionPtr function, zval* fault, soapHeade
 
 	xmlFreeDoc(doc_return);
 	xmlFree(buf);
-	zend_clear_exception();
+
+	if (!ZEND_HAS_OOM()) {
+		zend_clear_exception();
+	}
 }
 /* }}} */
 
@@ -1888,7 +1896,9 @@ static zend_never_inline ZEND_COLD void soap_real_error_handler(int error_num, z
 	    instanceof_function(Z_OBJCE(SOAP_GLOBAL(error_object)), soap_class_entry)) {
 		bool use_exceptions =
 			Z_TYPE_P(Z_CLIENT_EXCEPTIONS_P(&SOAP_GLOBAL(error_object))) != IS_FALSE;
-		if ((error_num & E_FATAL_ERRORS) && use_exceptions) {
+		if (ZEND_HAS_OOM()) {
+			old_error_handler(error_num, error_filename, error_lineno, message);
+		} else if ((error_num & E_FATAL_ERRORS) && use_exceptions) {
 			zval fault;
 			char *code = SOAP_GLOBAL(error_code);
 			if (code == NULL) {
@@ -2253,6 +2263,10 @@ static bool do_request(zval *this_ptr, xmlDoc *request, const char *location, co
 		return false;
 	}
 
+	ZVAL_UNDEF(&params[0]);
+	ZVAL_UNDEF(&params[1]);
+	ZVAL_UNDEF(&params[2]);
+
 	zend_try {
 		ZVAL_STRINGL(&params[0], buf, buf_size);
 		ZVAL_STRING(&params[1], location);
@@ -2426,9 +2440,19 @@ static void do_soap_call(zend_execute_data *execute_data,
 				request = NULL;
 
 				if (ret && Z_TYPE(response) == IS_STRING) {
+					bool parse_bailout = false;
+
 					encode_reset_ns();
-					ret = parse_packet_soap(this_ptr, Z_STRVAL(response), Z_STRLEN(response), fn, NULL, return_value, output_headers);
+					zend_try {
+						ret = parse_packet_soap(this_ptr, Z_STRVAL(response), Z_STRLEN(response), fn, NULL, return_value, output_headers);
+					} zend_catch {
+						parse_bailout = true;
+					} zend_end_try();
 					encode_finish();
+					if (parse_bailout) {
+						zval_ptr_dtor(&response);
+						zend_bailout();
+					}
 				}
 
 				zval_ptr_dtor(&response);
@@ -2470,9 +2494,19 @@ static void do_soap_call(zend_execute_data *execute_data,
 				request = NULL;
 
 				if (ret && Z_TYPE(response) == IS_STRING) {
+					bool parse_bailout = false;
+
 					encode_reset_ns();
-					ret = parse_packet_soap(this_ptr, Z_STRVAL(response), Z_STRLEN(response), NULL, NULL, return_value, output_headers);
+					zend_try {
+						ret = parse_packet_soap(this_ptr, Z_STRVAL(response), Z_STRLEN(response), NULL, NULL, return_value, output_headers);
+					} zend_catch {
+						parse_bailout = true;
+					} zend_end_try();
 					encode_finish();
+					if (parse_bailout) {
+						zval_ptr_dtor(&response);
+						zend_bailout();
+					}
 				}
 
 				zval_ptr_dtor(&response);
@@ -3079,7 +3113,12 @@ static void deserialize_parameters(xmlNodePtr params, sdlFunctionPtr function, u
 		    strcmp((char *)params->name, function->functionName) == 0) {
 			num_of_params = 0;
 		} else if (num_of_params > 0) {
-			tmp_parameters = safe_emalloc(num_of_params, sizeof(zval), 0);
+			tmp_parameters = safe_femalloc(num_of_params, sizeof(zval), 0, /* fallible */ true);
+			if (!tmp_parameters) {
+				*parameters = NULL;
+				*num_params = 0;
+				return;
+			}
 
 			trav = params;
 			while (trav != 0 && cur_param < num_of_params) {
@@ -3097,6 +3136,15 @@ static void deserialize_parameters(xmlNodePtr params, sdlFunctionPtr function, u
 					}
 					master_to_zval(&tmp_parameters[cur_param], enc, trav);
 					cur_param++;
+					if (ZEND_HAS_OOM()) {
+						for (int i = 0; i < cur_param; i++) {
+							zval_ptr_dtor(&tmp_parameters[i]);
+						}
+						efree(tmp_parameters);
+						*parameters = NULL;
+						*num_params = 0;
+						return;
+					}
 				}
 				trav = trav->next;
 			}
@@ -3156,6 +3204,10 @@ static sdlFunctionPtr find_function_using_soap_action(const sdl *sdl, const char
 		}
 		soap_action++;
 		soap_action_length -= 2;
+	}
+
+	if (UNEXPECTED(soap_action_length == 0)) {
+		return NULL;
 	}
 
 	/* TODO: This may depend on a particular target namespace, in which case this won't find a match when multiple different
@@ -3426,6 +3478,10 @@ static sdlFunctionPtr deserialize_function_call(sdlPtr sdl, xmlDocPtr request, c
 					last->next = h;
 				}
 				last = h;
+			}
+			if (ZEND_HAS_OOM()) {
+				encode_finish();
+				return NULL;
 			}
 ignore_header:
 			trav = trav->next;

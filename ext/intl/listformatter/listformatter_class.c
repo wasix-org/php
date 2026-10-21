@@ -60,12 +60,20 @@ PHP_METHOD(IntlListFormatter, __construct)
         zend_long type = INTL_LISTFORMATTER_FALLBACK_TYPE_AND;
         zend_long width = INTL_LISTFORMATTER_FALLBACK_WIDTH_WIDE;
     #endif
+
+    intl_errors_reset(LISTFORMATTER_ERROR_P(obj));
+
     ZEND_PARSE_PARAMETERS_START(1, 3)
         Z_PARAM_STRING(locale, locale_len)
         Z_PARAM_OPTIONAL
         Z_PARAM_LONG(type)
         Z_PARAM_LONG(width)
     ZEND_PARSE_PARAMETERS_END();
+
+    if (LISTFORMATTER_OBJECT(obj)) {
+        zend_throw_error(NULL, "IntlListFormatter object is already constructed");
+        RETURN_THROWS();
+    }
 
     if(locale_len == 0) {
         locale = (char *)intl_locale_get_default();
@@ -124,6 +132,8 @@ PHP_METHOD(IntlListFormatter, format)
         Z_PARAM_ARRAY_HT(ht)
     ZEND_PARSE_PARAMETERS_END();
 
+    intl_errors_reset(LISTFORMATTER_ERROR_P(obj));
+
     uint32_t count = zend_hash_num_elements(ht);
     if (count == 0) {
         RETURN_EMPTY_STRING();
@@ -154,7 +164,7 @@ PHP_METHOD(IntlListFormatter, format)
             }
             efree(items);
             efree(itemLengths);
-            intl_error_set(NULL, status, "Failed to convert string to UTF-16");
+            intl_errors_set(LISTFORMATTER_ERROR_P(obj), status, "Failed to convert string to UTF-16");
             RETURN_FALSE;
         }
         
@@ -170,7 +180,7 @@ PHP_METHOD(IntlListFormatter, format)
     resultLength = ulistfmt_format(LISTFORMATTER_OBJECT(obj), items, itemLengths, count, NULL, 0, &status);
 
     if (U_FAILURE(status) && status != U_BUFFER_OVERFLOW_ERROR) {
-        intl_error_set(NULL, status, "Failed to format list");
+        intl_errors_set(LISTFORMATTER_ERROR_P(obj), status, "Failed to format list");
         RETVAL_FALSE;
         goto cleanup;
     }
@@ -184,7 +194,7 @@ PHP_METHOD(IntlListFormatter, format)
         if (result) {
             efree(result);
         }
-        intl_error_set(NULL, status, "Failed to format list");
+        intl_errors_set(LISTFORMATTER_ERROR_P(obj), status, "Failed to format list");
         RETVAL_FALSE;
         goto cleanup;
     }
@@ -194,7 +204,7 @@ PHP_METHOD(IntlListFormatter, format)
     efree(result);
     
     if (!ret) {
-        intl_error_set(NULL, status, "Failed to convert result to UTF-8");
+        intl_errors_set(LISTFORMATTER_ERROR_P(obj), status, "Failed to convert result to UTF-8");
         RETVAL_FALSE;
     } else {
         RETVAL_NEW_STR(ret);

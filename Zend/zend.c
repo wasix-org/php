@@ -597,6 +597,9 @@ static void zend_print_zval_r_to_buf(smart_str *buf, zval *expr, int indent) /* 
 		case IS_LONG:
 			smart_str_append_long(buf, Z_LVAL_P(expr));
 			break;
+		case IS_DOUBLE:
+			smart_str_append_double(buf, Z_DVAL_P(expr), EG(precision), false);
+			break;
 		case IS_REFERENCE:
 			zend_print_zval_r_to_buf(buf, Z_REFVAL_P(expr), indent);
 			break;
@@ -748,6 +751,8 @@ static void compiler_globals_ctor(zend_compiler_globals *compiler_globals) /* {{
 		memset(base, 0, (zend_map_ptr_static_size + compiler_globals->map_ptr_last) * sizeof(void*));
 	}
 	zend_init_internal_run_time_cache();
+
+	compiler_globals->interned_strings_fallible = false;
 }
 /* }}} */
 
@@ -848,6 +853,7 @@ static void executor_globals_ctor(zend_executor_globals *executor_globals) /* {{
 			sizeof(executor_globals->strtod_state.freelist));
 	executor_globals->strtod_state.p5s = NULL;
 	executor_globals->strtod_state.result = NULL;
+	memset(&executor_globals->delayed_oom, 0, sizeof(executor_globals->delayed_oom));
 }
 /* }}} */
 
@@ -1389,6 +1395,8 @@ ZEND_API void zend_deactivate(void) /* {{{ */
 		zend_map_ptr_reset();
 	}
 
+	zend_mm_oom_info_dtor(&EG(delayed_oom));
+
 #if GC_BENCH
 	gc_bench_print();
 #endif
@@ -1486,9 +1494,10 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
 
 		/* This is very inefficient for a large number of errors.
 		 * Use pow2 realloc if it becomes a problem. */
-		EG(num_errors)++;
-		EG(errors) = erealloc(EG(errors), sizeof(zend_error_info*) * EG(num_errors));
-		EG(errors)[EG(num_errors)-1] = info;
+		uint32_t new_num_errors = EG(num_errors) + 1;
+		EG(errors) = safe_erealloc(EG(errors), new_num_errors, sizeof(zend_error_info*), 0);
+		EG(errors)[EG(num_errors)] = info;
+		EG(num_errors) = new_num_errors;
 
 		/* Do not process non-fatal recorded error */
 		if (!(type & E_FATAL_ERRORS) || (type & E_DONT_BAIL)) {
@@ -1501,7 +1510,7 @@ ZEND_API ZEND_COLD void zend_error_zstr_at(
 	ZVAL_UNDEF(&EG(last_fatal_error_backtrace));
 
 	/* Report about uncaught exception in case of fatal errors */
-	if (EG(exception)) {
+	if (EG(exception) && EXPECTED(EG(delayed_oom).state != ZEND_OOM_STATE_HANDLING)) {
 		zend_execute_data *ex;
 		const zend_op *opline;
 
@@ -1816,7 +1825,6 @@ ZEND_API void zend_free_recorded_errors(void)
 ZEND_API ZEND_COLD void zend_throw_error(zend_class_entry *exception_ce, const char *format, ...) /* {{{ */
 {
 	va_list va;
-	char *message = NULL;
 
 	if (!exception_ce) {
 		exception_ce = zend_ce_error;
@@ -1828,16 +1836,20 @@ ZEND_API ZEND_COLD void zend_throw_error(zend_class_entry *exception_ce, const c
 	}
 
 	va_start(va, format);
-	zend_vspprintf(&message, 0, format, va);
+	zend_string *message = zend_vstrpprintf(0, format, va);
 
 	//TODO: we can't convert compile-time errors to exceptions yet???
 	if (EG(current_execute_data) && !CG(in_compilation)) {
-		zend_throw_exception(exception_ce, message, 0);
+		// %S is used for zend_string pointers by smart str printing, but normally
+		// is for wide character strings and so compilers complain if this is inline
+		// Use "%S" so that the message can contain null bytes.
+		const char *format = "%S";
+		zend_throw_exception_ex(exception_ce, 0, format, message);
 	} else {
-		zend_error_noreturn(E_ERROR, "%s", message);
+		zend_error_noreturn(E_ERROR, "%s", ZSTR_VAL(message));
 	}
 
-	efree(message);
+	zend_string_release(message);
 	va_end(va);
 }
 /* }}} */
@@ -1976,6 +1988,9 @@ ZEND_API zend_result zend_execute_script(int type, zval *retval, zend_file_handl
 	zend_result ret = SUCCESS;
 	if (op_array) {
 		zend_execute(op_array, retval);
+		if (ZEND_HAS_OOM()) {
+			zend_handle_delayed_oom();
+		}
 		zend_exception_restore();
 		if (UNEXPECTED(EG(exception))) {
 			if (Z_TYPE(EG(user_exception_handler)) != IS_UNDEF) {

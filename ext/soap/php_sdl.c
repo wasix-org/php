@@ -369,7 +369,12 @@ static void load_wsdl_ex(zval *this_ptr, char *struri, sdlCtx *ctx, bool include
 			xmlAttrPtr tmp = get_attribute(trav->properties, "location");
 			if (tmp) {
 				xmlChar *uri = schema_location_construct_uri(tmp);
-				load_wsdl_ex(this_ptr, (char*)uri, ctx, true);
+				zend_try {
+					load_wsdl_ex(this_ptr, (char*)uri, ctx, true);
+				} zend_catch {
+					xmlFree(uri);
+					zend_bailout();
+				} zend_end_try();
 				xmlFree(uri);
 			}
 
@@ -1152,7 +1157,7 @@ static sdlPtr load_wsdl(zval *this_ptr, char *struri)
 	return ctx.sdl;
 }
 
-#define WSDL_CACHE_VERSION 0x10
+#define WSDL_CACHE_VERSION 0x11
 
 #define WSDL_CACHE_GET(ret,type,buf)   memcpy(&ret,*buf,sizeof(type)); *buf += sizeof(type);
 #define WSDL_CACHE_GET_INT(ret,buf)    ret = ((unsigned char)(*buf)[0])|((unsigned char)(*buf)[1]<<8)|((unsigned char)(*buf)[2]<<16)|((unsigned)(*buf)[3]<<24); *buf += 4;
@@ -2063,7 +2068,7 @@ static void sdl_serialize_soap_body(const sdlSoapBindingFunctionBodyPtr body, co
 				sdlSoapBindingFunctionHeaderPtr tmp2;
 				const zend_string *key_inner;
 
-				ZEND_HASH_MAP_FOREACH_STR_KEY_PTR(body->headers, key_inner, tmp2) {
+				ZEND_HASH_MAP_FOREACH_STR_KEY_PTR(tmp->headerfaults, key_inner, tmp2) {
 					sdl_serialize_key(key_inner, out);
 					WSDL_CACHE_PUT_1(tmp2->use, out);
 					if (tmp2->use == SOAP_ENCODED) {
