@@ -7,7 +7,6 @@ function exec_request($curl)
     if (curl_error($curl)) {
         throw new Exception("cURL request failed: " . curl_strerror(curl_errno($curl)), 1);
     }
-    curl_close($curl);
     return $result;
 }
 

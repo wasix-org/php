@@ -20,7 +20,7 @@ function test_freetype()
     $red = imagecolorallocate($im, 0xFF, 0x00, 0x00);
     $black = imagecolorallocate($im, 0x00, 0x00, 0x00);
     imagefilledrectangle($im, 0, 0, 299, 99, $red);
-    $font_file = './resources/FiraCode.ttf';
+    $font_file = __DIR__ . '/resources/FiraCode.ttf';
     imagefttext($im, 13, 0, 5, 25, $black, $font_file, 'Testing FreeType');
     assert_image_same($im, imagecreatefrompng("./resources/freetype-expected.png"));
 }
