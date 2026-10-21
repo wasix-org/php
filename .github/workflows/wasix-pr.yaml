@@ -1,33 +1,44 @@
-name: WASIX build and test
+name: Security WASIX CLI verification
 
 on:
-  workflow_call:
   push:
     branches:
-      - "*-wasix"
-  pull_request:
-    branches:
-      - "*-wasix"
+      - "security-cli-ci-20261021-wasix"
 
 # Match the toolchain used by PHPix, including the wide-arithmetic LLVM fix.
 env:
   WASIXCC_WASM_EXCEPTIONS: legacy
+  # Configure and build execute in separate shells; retain the runtime link flag.
+  WASIXCC_INCLUDE_CPP_SYMBOLS: "yes"
 
 permissions:
   contents: read
 
 jobs:
   build-and-test:
-    name: Build and Test
+    name: CLI ${{ matrix.php.version }} (${{ matrix.variant }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         variant: ["32", "64"]
+        php:
+          - version: "8.5"
+            ref: f579a7c97fd1472c1c6b26f32f46d7be70611857
+          - version: "8.4"
+            ref: 07e521d0a731b223d7506b28e14f451aa9efdbda
+          - version: "8.3"
+            ref: 668169ecfe79a88012deb04a86d74b73f6294a1c
+          - version: "8.2"
+            ref: 13dd4a58430c1c1d8f91e877f43f3aa878dc356f
+          - version: "8.1"
+            ref: 6b6fcf74c309ba3bfe1a4a9113e66531a28fb7c2
     steps:
       - name: Check out
         uses: actions/checkout@v3
         with:
           submodules: "recursive"
+          ref: ${{ matrix.php.ref }}
           path: php
 
       - name: Check out php-wasix-deps
@@ -101,77 +112,5 @@ jobs:
       - name: Archive build
         uses: actions/upload-artifact@v4
         with:
-          name: php-wasix-${{ matrix.variant }}
+          name: php-wasix-${{ matrix.php.version }}-${{ matrix.variant }}
           path: php/sapi/cli/php.wasm
-
-  build-libphp:
-    name: Build libphp
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        variant: ["32", "64"]
-    steps:
-      - name: Check out
-        uses: actions/checkout@v3
-        with:
-          submodules: "recursive"
-          path: php
-
-      - name: Check out php-wasix-deps
-        uses: actions/checkout@v3
-        with:
-          repository: wasix-org/php-wasix-deps
-          submodules: "recursive"
-          path: php-wasix-deps
-
-      - name: OS Setup (Ubuntu)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential wabt re2c curl xz-utils tar
-          npm i -g pnpm concurrently
-
-          wget https://github.com/WebAssembly/binaryen/releases/download/version_130/binaryen-version_130-x86_64-linux.tar.gz
-          tar -xzf binaryen-version_130-x86_64-linux.tar.gz
-          sudo cp binaryen-version_130/bin/* /usr/bin/
-
-      - name: Install wasixcc
-        uses: wasix-org/wasixcc@v0.4.4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          sysroot-tag: v2026-07-03.1
-          version: v0.4.4
-          llvm-tag: 21.1.206
-          binaryen-tag: version_130
-
-      - name: Tool Versions
-        run: |
-          echo wasixcc
-          wasixcc -v
-          echo '####################'
-          echo wasixar
-          wasixar -V
-          echo '####################'
-          echo wasixnm
-          wasixnm -V
-          echo '####################'
-          echo wasixranlib
-          wasixranlib -V
-          echo '####################'
-          echo wasm-opt
-          wasm-opt --version
-          echo '####################'
-          echo wasm-strip
-          wasm-strip --version
-
-      - name: Build
-        run: |
-          export PHP_WASIX_DEPS=$(pwd)/php-wasix-deps
-          cd php
-          bash wasix-configure-libphp-${{ matrix.variant }}.sh || { cat config.log; exit -1; }
-          bash wasix-build-libphp.sh
-
-      - name: Archive build
-        uses: actions/upload-artifact@v4
-        with:
-          name: libphp-wasix-${{ matrix.variant }}
-          path: php/install
